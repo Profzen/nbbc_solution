@@ -1,0 +1,206 @@
+// pages/api/send-transaction-email.js
+
+import nodemailer from "nodemailer";
+import formidable from "formidable";
+import fs from "fs";
+import path from "path";
+
+// Import de la connexion et du modèle
+import { connectToDatabase } from "../../lib/mongodb";
+import Transaction from "../../models/Transaction";
+
+// Désactive le parsing par défaut de Next.js pour gérer FormData
+export const config = { api: { bodyParser: false } };
+
+/**
+ * Parse la requête entrante multipart/form-data avec Formidable.
+ * - multiples: false (un seul fichier)
+ * - maxFileSize: 5 Mo
+ * - filter: autorise PDF, Word et formats image
+ */
+function parseForm(req) {
+  return new Promise((resolve, reject) => {
+    const form = formidable({
+      multiples: false,
+      maxFileSize: 5 * 1024 * 1024, // 5 Mo
+      filter: ({ mimetype }) => {
+        const allowed = [
+          "application/pdf",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "image/jpeg",
+          "image/png",
+          "image/gif",
+          "image/bmp",
+          "image/webp",
+        ];
+        return allowed.includes(mimetype || "");
+      },
+    });
+    form.parse(req, (err, fields, files) => {
+      if (err) return reject(err);
+      resolve({ fields, files });
+    });
+  });
+}
+
+/** Normalise un champ qui peut venir sous forme de tableau */
+function norm(field) {
+  if (Array.isArray(field)) return field[0];
+  return field;
+}
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ message: "Méthode non autorisée" });
+  }
+
+  try {
+    // 1️⃣ Parse the form
+    const { fields, files } = await parseForm(req);
+
+    // 2️⃣ Normalise each field
+    const amount         = norm(fields.amount);
+    const from           = norm(fields.from);
+    const to             = norm(fields.to);
+    const converted      = norm(fields.converted);
+    const firstName      = norm(fields.firstName);
+    const lastName       = norm(fields.lastName);
+    const phone          = norm(fields.phone);
+    const email          = norm(fields.email);
+    const country        = norm(fields.country);
+    const paymentMethod  = norm(fields.paymentMethod);
+    const paymentDetails = norm(fields.paymentDetails);
+    const address        = norm(fields.address);
+
+    // 3️⃣ Prépare la pièce jointe
+    const attachments = [];
+    let proof = files.proof;
+    if (Array.isArray(proof)) proof = proof[0];
+    if (proof && (proof.filepath || proof.path)) {
+  const filePath = proof.filepath || proof.path;
+  const fileName = Date.now() + "-" + (proof.originalFilename || "preuve");
+  const publicPath = path.join(process.cwd(), "public", "uploads", fileName);
+  const fileContent = fs.readFileSync(filePath);
+
+  fs.mkdirSync(path.dirname(publicPath), { recursive: true });
+  fs.copyFileSync(filePath, publicPath);
+
+  attachments.push({ filename: fileName, content: fileContent });
+  proof = fileName; // Pour enregistrement MongoDB
+}
+
+
+    // 4️⃣ Configure SMTP
+    const transporter = nodemailer.createTransport({
+      host:   process.env.SMTP_HOST,
+      port:   Number(process.env.SMTP_PORT),
+      secure: process.env.SMTP_SECURE === "true",
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+
+    // 5️⃣ Connexion et insertion en base
+    await connectToDatabase();
+    console.log("🗄️  Connexion à MongoDB établie");
+
+    const transaction = await Transaction.create({
+      firstName,
+      lastName,
+      email,
+      phone,
+      country,
+      from,
+      to,
+      amount:         Number(amount),
+      converted:      Number(converted),
+      paymentMethod:  paymentMethod  || null,
+      paymentDetails: paymentDetails || null,
+      address:        address        || null,
+      proofFilename:  proof || null,
+      status:         "en attente",
+    });
+    console.log("📥  Transaction insérée en base avec _id =", transaction._id);
+
+    const txId = transaction._id.toString();
+
+    // 6️⃣ Prépare les e-mails
+    const clientMail = {
+      from:    `"CryptoFiat" <${process.env.SMTP_USER}>`,
+      to:      email,
+      subject: `Votre conversion ${from} → ${to} est en cours`,
+      text: `
+Bonjour ${firstName} ${lastName},
+
+Nous avons bien reçu votre demande de conversion.
+
+• Montant : ${amount} ${from}
+• Équivalent : ${converted} ${to}
+• Pays : ${country}
+• Téléphone : ${phone}
+${paymentMethod  ? `• Moyen de paiement : ${paymentMethod}`   : ""}
+${paymentDetails ? `• Détails paiement : ${paymentDetails}` : ""}
+${address        ? `• Adresse de réception : ${address}`   : ""}
+
+Votre ID de transaction est : ${txId}
+
+Merci pour votre confiance !
+      `,
+      attachments,
+    };
+
+    const adminMail = {
+      from:    `"CryptoFiat" <${process.env.SMTP_USER}>`,
+      to:      "profzzen@gmail.com",
+      subject: `🔔 Nouvelle commande : ${from} → ${to}`,
+      text: `
+Nouvelle commande enregistrée :
+
+Client :
+- ${firstName} ${lastName}
+- Email : ${email}
+- Téléphone : ${phone}
+- Pays : ${country}
+
+Transaction :
+- ID : ${txId}
+- Montant : ${amount} ${from}
+- Équivalent : ${converted} ${to}
+${paymentMethod  ? `- Moyen de paiement : ${paymentMethod}`   : ""}
+${paymentDetails ? `- Détails paiement : ${paymentDetails}` : ""}
+${address        ? `- Adresse : ${address}`               : ""}
+
+Statut : en attente
+Preuve jointe si présente.
+      `,
+      attachments,
+    };
+
+    // 7️⃣ Envoi des e‑mails
+    await transporter.sendMail(clientMail);
+    await transporter.sendMail(adminMail);
+
+    // 8️⃣ Réponse
+    return res
+      .status(200)
+      .json({ message: "E‑mails envoyés et transaction enregistrée", id: txId });
+
+  } catch (error) {
+    console.error("Erreur API send-transaction-email :", error);
+    if (error.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({ message: "Le fichier est trop lourd (max 5 Mo)." });
+    }
+    if (error.message?.includes("filter")) {
+      return res.status(400).json({
+        message:
+          "Type de fichier non autorisé. Seuls PDF, Word ou images sont acceptés.",
+      });
+    }
+    return res
+      .status(500)
+      .json({ message: "Erreur interne lors de l'envoi d’e‑mail." });
+  }
+}
+ 
