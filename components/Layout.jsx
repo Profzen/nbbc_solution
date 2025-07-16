@@ -12,11 +12,14 @@ export default function Layout({ children }) {
             CryptoFiat
           </Link>
           <ul className="flex space-x-6">
+            {/* 
             <li>
               <Link href="/" className="hover:text-accent">
                 Accueil
               </Link>
             </li>
+             */}
+            
             <li>
               <Link href="/apropos" className="hover:text-accent">
                 a propos

@@ -28,7 +28,7 @@ export default function Hero() {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.4 }}
         >
-          Commencer
+          Commencer ci-dessous <br/>
         </motion.a>
       </div>
       {/* Décor animé (ex : cercle flottant) */}
