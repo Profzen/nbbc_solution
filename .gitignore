@@ -1,6 +1,9 @@
-.env.local
+﻿.env.local
 node_modules
 .next
 .env
 .DS_Store
 *.log
+# ne pas versionner les dépendances
+node_modules/
+public/uploads/
