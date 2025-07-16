@@ -13,10 +13,7 @@ import Transaction from "../../models/Transaction";
 export const config = { api: { bodyParser: false } };
 
 /**
- * Parse la requête entrante multipart/form-data avec Formidable.
- * - multiples: false (un seul fichier)
- * - maxFileSize: 5 Mo
- * - filter: autorise PDF, Word et formats image
+ * Parse la requête multipart/form-data avec Formidable.
  */
 function parseForm(req) {
   return new Promise((resolve, reject) => {
@@ -46,8 +43,7 @@ function parseForm(req) {
 
 /** Normalise un champ qui peut venir sous forme de tableau */
 function norm(field) {
-  if (Array.isArray(field)) return field[0];
-  return field;
+  return Array.isArray(field) ? field[0] : field;
 }
 
 export default async function handler(req, res) {
@@ -56,10 +52,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1️⃣ Parse the form
+    // 1️⃣ On parse
     const { fields, files } = await parseForm(req);
 
-    // 2️⃣ Normalise each field
+    // 2️⃣ On normalise
     const amount         = norm(fields.amount);
     const from           = norm(fields.from);
     const to             = norm(fields.to);
@@ -73,25 +69,29 @@ export default async function handler(req, res) {
     const paymentDetails = norm(fields.paymentDetails);
     const address        = norm(fields.address);
 
-    // 3️⃣ Prépare la pièce jointe
+    // 3️⃣ Préparation de l’attachement
     const attachments = [];
-    let proof = files.proof;
-    if (Array.isArray(proof)) proof = proof[0];
-    if (proof && (proof.filepath || proof.path)) {
-  const filePath = proof.filepath || proof.path;
-  const fileName = Date.now() + "-" + (proof.originalFilename || "preuve");
-  const publicPath = path.join(process.cwd(), "public", "uploads", fileName);
-  const fileContent = fs.readFileSync(filePath);
+    let proofFilename = null;
+    let proofFile     = files.proof;
+    if (Array.isArray(proofFile)) proofFile = proofFile[0];
 
-  fs.mkdirSync(path.dirname(publicPath), { recursive: true });
-  fs.copyFileSync(filePath, publicPath);
+    if (proofFile && (proofFile.filepath || proofFile.path)) {
+      try {
+        const tmpPath = proofFile.filepath || proofFile.path;
+        const fileName =
+          Date.now() +
+          "-" +
+          (proofFile.originalFilename || "preuve");
+        const fileContent = fs.readFileSync(tmpPath);
 
-  attachments.push({ filename: fileName, content: fileContent });
-  proof = fileName; // Pour enregistrement MongoDB
-}
+        attachments.push({ filename: fileName, content: fileContent });
+        proofFilename = fileName;
+      } catch (e) {
+        console.warn("⚠️  Impossible de lire le fichier de preuve :", e);
+      }
+    }
 
-
-    // 4️⃣ Configure SMTP
+    // 4️⃣ Connexion SMTP
     const transporter = nodemailer.createTransport({
       host:   process.env.SMTP_HOST,
       port:   Number(process.env.SMTP_PORT),
@@ -102,10 +102,8 @@ export default async function handler(req, res) {
       },
     });
 
-    // 5️⃣ Connexion et insertion en base
+    // 5️⃣ Connexion MongoDB + insertion
     await connectToDatabase();
-    console.log("🗄️  Connexion à MongoDB établie");
-
     const transaction = await Transaction.create({
       firstName,
       lastName,
@@ -119,14 +117,13 @@ export default async function handler(req, res) {
       paymentMethod:  paymentMethod  || null,
       paymentDetails: paymentDetails || null,
       address:        address        || null,
-      proofFilename:  proof || null,
+      proofFilename,           // on sauve juste le nom
       status:         "en attente",
     });
-    console.log("📥  Transaction insérée en base avec _id =", transaction._id);
 
     const txId = transaction._id.toString();
 
-    // 6️⃣ Prépare les e-mails
+    // 6️⃣ Préparation des e‑mails
     const clientMail = {
       from:    `"CryptoFiat" <${process.env.SMTP_USER}>`,
       to:      email,
@@ -178,11 +175,11 @@ Preuve jointe si présente.
       attachments,
     };
 
-    // 7️⃣ Envoi des e‑mails
+    // 7️⃣ Envoi
     await transporter.sendMail(clientMail);
     await transporter.sendMail(adminMail);
 
-    // 8️⃣ Réponse
+    // 8️⃣ OK
     return res
       .status(200)
       .json({ message: "E‑mails envoyés et transaction enregistrée", id: txId });
@@ -203,4 +200,3 @@ Preuve jointe si présente.
       .json({ message: "Erreur interne lors de l'envoi d’e‑mail." });
   }
 }
- 
