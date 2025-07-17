@@ -1,7 +1,8 @@
 // pages/apropos.js
+import styles from "../styles/home.module.css";
 import Link from "next/link";
 import { FaFacebookF, FaTwitter, FaInstagram, FaTelegramPlane, FaLinkedinIn, FaTiktok, FaWhatsapp } from "react-icons/fa";
-import styles from "../styles/home.module.css";
+
 
 
 export default function APropos() {
