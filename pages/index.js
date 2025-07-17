@@ -3,13 +3,17 @@ import Head from "next/head"
 import Layout from "../components/Layout"
 import Hero from "../components/Hero"
 import TradeForm from "../components/TradeForm"
+import styles from "../styles/Home.module.css"
 
 export default function Home() {
   return (
     <Layout>
       <Head><title>CryptoFiat – Accueil</title></Head>
-      <Hero />
-      <TradeForm />
+
+      <div className={styles.background}>
+        <Hero />
+        <TradeForm />
+      </div>
     </Layout>
   )
 }

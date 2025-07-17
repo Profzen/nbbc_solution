@@ -1,0 +1,15 @@
+/* styles/Home.module.css */
+.background {
+  background-image: url('/images/bg-home.jpeg');
+  background-size: cover;         /* s'adapte à la taille de l'écran */
+  background-position: center;    /* garde le centre visible */
+  background-repeat: no-repeat;
+  min-height: 100vh;              /* hauteur minimum = taille écran */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  box-sizing: border-box;
+}

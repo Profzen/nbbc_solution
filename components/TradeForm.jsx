@@ -251,9 +251,12 @@ export default function TradeForm() {
                 onChange={(e) => setPaymentMethod(e.target.value)}
               >
                 <option value="">Sélectionnez...</option>
-                <option value="bank">Virement bancaire</option>
-                <option value="mobile">Mobile Money</option>
-                <option value="card">Carte bancaire</option>
+                <option value="bank">Ecobank</option>
+                <option value="mobile">Moov money</option>
+                <option value="card">Mix by yas</option>
+                <option value="card">Mtn</option>
+                <option value="card">Paypal</option>
+                <option value="card">Wave</option>
               </select>
 
               <label className="block mb-2">Numéro ou compte de paiement</label>

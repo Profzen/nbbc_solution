@@ -41,7 +41,9 @@ export default function Layout({ children }) {
 
       {/* Footer */}
       <footer id="contact" className="bg-white text-center py-8">
-        <p className="mb-2">Contactez-nous : support@cryptofiat.com</p>
+        <p className="mb-2">Contactez-nous : newbossbusinesscenter@gmail.com <br/>
+        Appel : +228 98901032 / +228 93793232
+        </p>
         <p className="text-sm text-gray-500">© 2025 CryptoFiat</p>
       </footer>
     </div>
