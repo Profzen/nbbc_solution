@@ -68,22 +68,22 @@ export default function APropos() {
         {/* Réseaux sociaux */}
         <h2 className="text-2xl font-bold mb-4 text-center">Suivez-nous</h2>
         <div className="flex justify-center space-x-6 text-2xl text-accent mb-8">
-          <a href="https://facebook.com/cryptofiat" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
+          <a href="https://www.facebook.com/share/19nNo9rFob/" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
             <FaFacebookF />
           </a>
           <a href="https://twitter.com/cryptofiat" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
             <FaTwitter />
           </a>
-          <a href="https://instagram.com/cryptofiat" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
+          <a href="hhttps://www.instagram.com/nbbc_exchange?igsh=MWpnajNkdG85NWxnNA==&utm_source=ig_contact_invite" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
             <FaInstagram />
           </a>
-          <a href="https://instagram.com/cryptofiat" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
+          <a href="https://www.tiktok.com/@nbbcsolutiontg?_t=ZM-8y6oxGEFG3M&_r=1" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
             <FaTiktok />
           </a>
-          <a href="https://t.me/cryptofiat" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
+          <a href="t.me/Newbossbdr" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
             <FaTelegramPlane />
           </a>
-          <a href="https://linkedin.com/company/cryptofiat" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
+          <a href="https://www.linkedin.com/company/nbbc-solution/" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
             <FaLinkedinIn />
           </a>
           <a href="https://wa.me/22898901032" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
