@@ -40,7 +40,6 @@ export default function History({ transactions }) {
       <h1 className="text-3xl font-bold text-primary mb-6">
         Historique des transactions
       </h1>
-
       <div className="mb-6">
         <input
           type="text"
@@ -55,7 +54,7 @@ export default function History({ transactions }) {
         <thead>
           <tr className="bg-gray-100">
             <th className="p-3">Date</th>
-            <th className="p-3">Client</th>
+            {/*<th className="p-3">Client</th>*/}
             <th className="p-3">De → Vers</th>
             <th className="p-3">Montant</th>
             <th className="p-3">Équivalent</th>
@@ -73,11 +72,11 @@ export default function History({ transactions }) {
             filteredTransactions.map(tx => (
               <tr key={tx._id} className="border-t">
                 <td className="p-3">{tx.createdAt}</td>
-                <td className="p-3">
+                {/*<td className="p-3">
                   {tx.firstName} {tx.lastName}
                   <br />
                   {tx.email}
-                </td>
+                </td>*/}
                 <td className="p-3">{tx.from} → {tx.to}</td>
                 <td className="p-3">{tx.amount}</td>
                 <td className="p-3">{tx.converted}</td>

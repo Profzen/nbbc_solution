@@ -1,3 +1,5 @@
+// components/TradeForm.jsx
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/router";
@@ -42,10 +44,10 @@ export default function TradeForm() {
   const [preview, setPreview] = useState(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalType, setModalType] = useState("");
+  const [modalType, setModalType] = useState(""); // "crypto2fiat" ou "fiat2crypto"
   const [paymentMethod, setPaymentMethod] = useState("");
   const [paymentDetails, setPaymentDetails] = useState("");
-  const [address, setAddress] = useState("");
+  const [cryptoAddressSent, setCryptoAddressSent] = useState(""); // inutilisé mais on garde
   const [proofFile, setProofFile] = useState(null);
 
   const [firstName, setFirstName] = useState("");
@@ -60,30 +62,37 @@ export default function TradeForm() {
   const currencies = ["BTC", "ETH", "USDT", "USD", "EUR", "XOF"];
   const [rates, setRates] = useState(null);
 
+  // Charger les taux
   useEffect(() => {
     if (rates === null) {
       fetch("/api/rates")
         .then((r) => r.json())
         .then(({ rates }) => setRates(rates));
-      return;
     }
+  }, [rates]);
 
-    if (!amount || isNaN(amount)) {
+  // Calculer l'aperçu avec logique 17 %
+  useEffect(() => {
+    if (!rates || !amount || isNaN(amount)) {
       setPreview(null);
       return;
     }
+    const raw = (parseFloat(amount) * rates[fromCurrency]) / rates[toCurrency];
+    const cryptoList = ["BTC", "ETH", "USDT"];
+    const isFiatToCrypto = cryptoList.includes(toCurrency) && !cryptoList.includes(fromCurrency);
 
-    const result =
-      (parseFloat(amount) * rates[fromCurrency]) / rates[toCurrency];
-    setPreview(result.toFixed(2));
+    // si fiat → crypto, on diminuer 17 %
+    const adjusted = isFiatToCrypto ? raw / 1.17 : raw;
+    setPreview(adjusted.toFixed(2));
   }, [amount, fromCurrency, toCurrency, rates]);
 
   const handleConvert = () => {
     const cryptoList = ["BTC", "ETH", "USDT"];
-    const isCryptoToFiat =
-      cryptoList.includes(fromCurrency) && !cryptoList.includes(toCurrency);
-
+    const isCryptoToFiat = cryptoList.includes(fromCurrency) && !cryptoList.includes(toCurrency);
     setModalType(isCryptoToFiat ? "crypto2fiat" : "fiat2crypto");
+    setPaymentMethod("");
+    setPaymentDetails("");
+    setProofFile(null);
     setIsModalOpen(true);
   };
 
@@ -91,32 +100,30 @@ export default function TradeForm() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const data = new FormData();
-    data.append("amount", amount);
-    data.append("from", fromCurrency);
-    data.append("to", toCurrency);
-    data.append("converted", preview);
-    data.append("firstName", firstName);
-    data.append("lastName", lastName);
-    data.append("phone", phone);
-    data.append("email", email);
-    data.append("country", country);
-    if (modalType === "crypto2fiat") {
-      data.append("paymentMethod", paymentMethod);
-      data.append("paymentDetails", paymentDetails);
-    } else {
-      data.append("address", address);
-    }
-    data.append("proof", proofFile);
+    const form = new FormData();
+    form.append("amount", amount);
+    form.append("from", fromCurrency);
+    form.append("to", toCurrency);
+    form.append("converted", preview);
+    form.append("firstName", firstName);
+    form.append("lastName", lastName);
+    form.append("phone", phone);
+    form.append("email", email);
+    form.append("country", country);
 
-    try {
-      await fetch("/api/send-transaction-email", {
-        method: "POST",
-        body: data,
-      });
-    } catch (err) {
-      console.error("Erreur envoi email :", err);
+    if (modalType === "fiat2crypto") {
+      form.append("paymentMethod", paymentMethod);
+      form.append("paymentDetails", paymentDetails);
+    } else {
+      // crypto2fiat : on enregistre paymentDetails comme le numéro de compte fiat
+      form.append("paymentDetails", paymentDetails);
     }
+    form.append("proof", proofFile);
+
+    await fetch("/api/send-transaction-email", {
+      method: "POST",
+      body: form,
+    }).catch(console.error);
 
     setIsSubmitting(false);
     setIsModalOpen(false);
@@ -128,6 +135,18 @@ export default function TradeForm() {
     router.push("/history");
   };
 
+  // Instructions par défaut
+  const paymentInstructions = {
+    Ecobank:      "Envoyez votre paiement sur Ecobank (RIB 000111222)",
+    "Moov money": "Envoyez au Moov Money : 98 90 10 32",
+    "Mix by yas": "Envoyez au Mix by Yas : 93 79 32 32",
+    Mtn:          "Envoyez au MTN Money : 88 543 21 09",
+    Paypal:       "Envoyez sur PayPal : paypal@cryptofiat.com",
+    Wave:         "Envoyez au Wave : 70 321 54 98",
+  };
+  const defaultCryptoAddress = "0xAbC1234Def5678GhI9012jKlm3456NoPq7890rs";
+  const defaultFiatAccountPlaceholder = "Votre numéro ou compte bancair e";
+
   return (
     <div className="container mx-auto p-8">
       <motion.div
@@ -136,22 +155,19 @@ export default function TradeForm() {
         animate={{ opacity: 1, y: 0 }}
       >
         <div className="flex flex-col md:flex-row gap-4">
+          {/* Sélecteurs */}
           <div className="flex-1">
-            <label className="block mb-1 text-gray-700">De</label>
+            <label className="block mb-1">De</label>
             <select
               className="w-full border rounded-lg p-3"
               value={fromCurrency}
               onChange={(e) => setFromCurrency(e.target.value)}
             >
-              {currencies.map((cur) => (
-                <option key={cur} value={cur}>
-                  {cur}
-                </option>
-              ))}
+              {currencies.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div className="flex-1">
-            <label className="block mb-1 text-gray-700">Montant</label>
+            <label className="block mb-1">Montant</label>
             <input
               type="number"
               className="w-full border rounded-lg p-3"
@@ -161,21 +177,18 @@ export default function TradeForm() {
             />
           </div>
           <div className="flex-1">
-            <label className="block mb-1 text-gray-700">Vers</label>
+            <label className="block mb-1">Vers</label>
             <select
               className="w-full border rounded-lg p-3"
               value={toCurrency}
               onChange={(e) => setToCurrency(e.target.value)}
             >
-              {currencies.map((cur) => (
-                <option key={cur} value={cur}>
-                  {cur}
-                </option>
-              ))}
+              {currencies.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
         </div>
 
+        {/* Aperçu */}
         {preview && (
           <p className="mt-4 text-center text-lg text-gray-600">
             Équivalent : <strong>{preview} {toCurrency}</strong>
@@ -184,65 +197,43 @@ export default function TradeForm() {
 
         <button
           onClick={handleConvert}
-          className="mt-6 w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-orange-600 transition"
+          className="mt-6 w-full bg-primary text-white py-3 rounded-lg hover:bg-orange-600"
         >
           Convertir
         </button>
       </motion.div>
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => !isSubmitting && setIsModalOpen(false)}
-        title="Finalisez votre transaction"
-      >
+      {/* Modal */}
+      <Modal isOpen={isModalOpen} onClose={() => !isSubmitting && setIsModalOpen(false)} title="Finalisez votre transaction">
         <form onSubmit={handleSubmit}>
-          <label className="block mb-2">Prénom</label>
-          <input
-            type="text"
-            required
-            className="w-full border rounded-lg p-2 mb-3"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-          />
-
-          <label className="block mb-2">Nom</label>
-          <input
-            type="text"
-            required
-            className="w-full border rounded-lg p-2 mb-3"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-          />
-
-          <label className="block mb-2">Téléphone</label>
-          <input
-            type="tel"
-            required
-            className="w-full border rounded-lg p-2 mb-3"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-
-          <label className="block mb-2">Email</label>
-          <input
-            type="email"
-            required
-            className="w-full border rounded-lg p-2 mb-3"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-
-          <label className="block mb-2">Pays</label>
-          <input
-            type="text"
-            required
-            className="w-full border rounded-lg p-2 mb-4"
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-          />
+          {/* Infos client */}
+          {[
+            ["Prénom", firstName, setFirstName],
+            ["Nom", lastName, setLastName],
+            ["Téléphone", phone, setPhone],
+            ["Email", email, setEmail],
+            ["Pays", country, setCountry],
+          ].map(([label, val, setter]) => (
+            <div key={label}>
+              <label className="block mb-2">{label}</label>
+              <input
+                type={label === "Email" ? "email" : "text"}
+                required
+                className="w-full border rounded-lg p-2 mb-3"
+                value={val}
+                onChange={(e) => setter(e.target.value)}
+              />
+            </div>
+          ))}
 
           {modalType === "crypto2fiat" ? (
             <>
+              {/* Vente de crypto → fiat */}
+              <p className="mb-4 text-sm italic text-gray-700">
+                Merci d’envoyer vos crypto-monnaies à l’adresse <strong>(BEP20)</strong> suivante :
+                <br />
+                <code className="block bg-gray-100 p-2 rounded my-2">{defaultCryptoAddress}</code>
+              </p>
               <label className="block mb-2">Moyen de paiement</label>
               <select
                 className="w-full border rounded-lg p-2 mb-2"
@@ -251,38 +242,53 @@ export default function TradeForm() {
                 onChange={(e) => setPaymentMethod(e.target.value)}
               >
                 <option value="">Sélectionnez...</option>
-                <option value="Ecobank">Ecobank</option>
-                <option value="Moov money"> Moov money</option>
-                <option value="Mix by yas">Mix by yas</option>
-                <option value="Mtn">Mtn</option>
-                <option value="Paypal">Paypal</option>
-                <option value="Wave">Wave</option>
+                {Object.keys(paymentInstructions).map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
               </select>
-
-              <label className="block mb-2">Numéro ou compte de paiement</label>
+              <label className="block mb-2">Mail / Numéro(de compte ou mobile)  pour recevoir le paiement</label>
               <input
                 type="text"
                 required
                 className="w-full border rounded-lg p-2 mb-4"
-                placeholder="Ex: numéro mobile ou RIB"
+                placeholder={defaultFiatAccountPlaceholder}
                 value={paymentDetails}
                 onChange={(e) => setPaymentDetails(e.target.value)}
               />
             </>
           ) : (
             <>
-              <label className="block mb-2">Adresse crypto</label>
+              {/* Achat de crypto ← fiat */}
+              <label className="block mb-2">Moyen de paiement</label>
+              <select
+                className="w-full border rounded-lg p-2 mb-2"
+                required
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              >
+                <option value="">Sélectionnez...</option>
+                {Object.keys(paymentInstructions).map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+              {paymentMethod && (
+                <p className="mb-3 text-sm italic text-gray-700">
+                  {paymentInstructions[paymentMethod]}
+                </p>
+              )}
+              <label className="block mb-2">Adresse <strong>(BEP20)</strong> de reception de votre crypto</label>
               <input
                 type="text"
                 required
                 className="w-full border rounded-lg p-2 mb-4"
-                placeholder="Votre adresse de réception"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                placeholder={defaultFiatAccountPlaceholder}
+                value={paymentDetails}
+                onChange={(e) => setPaymentDetails(e.target.value)}
               />
             </>
           )}
 
+          {/* Preuve */}
           <label className="block mb-2">
             Preuve ({modalType === "crypto2fiat" ? "crypto envoyée" : "paiement fiat"})
           </label>
@@ -294,33 +300,29 @@ export default function TradeForm() {
             onChange={(e) => setProofFile(e.target.files[0])}
           />
 
+          {/* Bouton avec loader */}
           <button
             type="submit"
             disabled={isSubmitting}
-            className={`w-full bg-accent text-white font-semibold py-2 rounded-lg flex justify-center items-center ${
+            className={`w-full bg-accent text-white py-2 rounded-lg flex justify-center items-center ${
               isSubmitting ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
-            {isSubmitting ? (
-              <div className="loader border-t-2 border-white rounded-full w-5 h-5 animate-spin"></div>
-            ) : (
-              "Valider la transaction"
-            )}
+            {isSubmitting
+              ? <div className="loader border-t-2 border-white rounded-full w-5 h-5 animate-spin"></div>
+              : "Valider la transaction"}
           </button>
         </form>
       </Modal>
 
-      <Modal
-        isOpen={isConfirmOpen}
-        onClose={() => setIsConfirmOpen(false)}
-        title="Transaction prise en compte"
-      >
+      {/* Confirmation */}
+      <Modal isOpen={isConfirmOpen} onClose={() => setIsConfirmOpen(false)} title="Transaction prise en compte">
         <p className="mb-4">
           Votre demande a bien été prise en compte et sera traitée dans les plus brefs délais.
         </p>
         <button
           onClick={handleFinish}
-          className="w-full bg-primary text-white font-bold py-2 rounded-lg"
+          className="w-full bg-primary text-white py-2 rounded-lg"
         >
           Terminé
         </button>
