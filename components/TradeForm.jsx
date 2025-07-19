@@ -15,7 +15,8 @@ function Modal({ isOpen, onClose, title, children }) {
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="bg-white rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-xl p-6 w-full max-w-sm sm:max-w-md max-h-[90vh] overflow-y-auto break-words"
+
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
@@ -232,7 +233,7 @@ export default function TradeForm() {
               <p className="mb-4 text-sm italic text-gray-700">
                 Merci d’envoyer vos crypto-monnaies à l’adresse <strong>(BEP20)</strong> suivante :
                 <br />
-                <code className="block bg-gray-100 p-2 rounded my-2">{defaultCryptoAddress}</code>
+                <code className="block bg-gray-100 p-2 rounded my-2 break-all">{defaultCryptoAddress}</code>
               </p>
               <label className="block mb-2">Moyen de paiement</label>
               <select
