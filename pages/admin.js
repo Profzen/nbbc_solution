@@ -19,25 +19,42 @@ function DetailModal({ isOpen, onClose, tx }) {
           <li><strong>Téléphone :</strong> {tx.phone}</li>
           <li><strong>Pays :</strong> {tx.country}</li>
           <li><strong>De → Vers :</strong> {tx.from} → {tx.to}</li>
-          <li><strong>Montant :</strong> {tx.amount}</li>
-          <li><strong>Équivalent :</strong> {tx.converted}</li>
+          <li><strong>Montant :</strong> {tx.amount} {tx.from}</li>
+          <li><strong>Équivalent :</strong> {tx.converted} {tx.to}</li>
           <li><strong>Statut :</strong> {tx.status}</li>
-          {tx.paymentDetails && <li><strong>Détails paiement :</strong> {tx.paymentDetails}</li>}
-          {tx.address        && <li><strong>Adresse crypto :</strong> {tx.address}</li>}
+
+          {/* Ajout des nouveaux champs */}
+          {tx.paymentMethod && (
+            <li><strong>Moyen de paiement :</strong> {tx.paymentMethod}</li>
+          )}
+          {tx.paymentDetails && (
+            <li><strong>Détails paiement :</strong> {tx.paymentDetails}</li>
+          )}
+
+          {tx.address && (
+            <li>
+              <strong>
+                {tx.to === 'XOF' || tx.to === 'USD' || tx.to === 'EUR'
+                  ? 'Numéro de paiement :'
+                  : 'Adresse crypto :'}
+              </strong>{" "}
+              {tx.address}
+            </li>
+          )}
+
           {tx.proofFilename && (
-  <li className="mt-3">
-    <strong>Preuve : |{" "}
-    <a
-      href={`/uploads/${encodeURIComponent(tx.proofFilename)}`}
-      download
-      className="text-green-600 underline text-sm"
-    >
-      Télécharger
-    </a></strong><br />
-
-  </li>
-)}
-
+            <li className="mt-3">
+              <strong>Preuve : |{" "}
+                <a
+                  href={`/uploads/${encodeURIComponent(tx.proofFilename)}`}
+                  download
+                  className="text-green-600 underline text-sm"
+                >
+                  Télécharger
+                </a>
+              </strong><br />
+            </li>
+          )}
         </ul>
         <button
           onClick={onClose}

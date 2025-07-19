@@ -141,7 +141,8 @@ ${paymentMethod  ? `• Moyen de paiement : ${paymentMethod}`   : ""}
 ${paymentDetails ? `• Détails paiement : ${paymentDetails}` : ""}
 ${address        ? `• Adresse de réception : ${address}`   : ""}
 
-Votre ID de transaction est : ${txId}
+✅ Votre ID de transaction est : ${txId}
+📌 Statut actuel : en attente
 
 Merci pour votre confiance !
       `,
@@ -200,5 +201,3 @@ Preuve jointe si présente.
       .json({ message: "Erreur interne lors de l'envoi d’e‑mail." });
   }
 }
-
- 
