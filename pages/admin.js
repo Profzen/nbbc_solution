@@ -4,16 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { format } from "date-fns";
 
-// Modal de détails
+// Modal détails
 function DetailModal({ isOpen, onClose, tx }) {
-  if (!isOpen || !tx) return null;
+  if(!isOpen||!tx) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <h3 className="text-xl font-semibold mb-4">Détails de la transaction</h3>
         <ul className="space-y-2 text-sm">
           <li><strong>ID :</strong> {tx._id}</li>
-          <li><strong>Date :</strong> {format(new Date(tx.createdAt), "yyyy-MM-dd HH:mm:ss")}</li>
+          <li><strong>Date :</strong> {format(new Date(tx.createdAt),"yyyy-MM-dd HH:mm:ss")}</li>
           <li><strong>Client :</strong> {tx.firstName} {tx.lastName}</li>
           <li><strong>Email :</strong> {tx.email}</li>
           <li><strong>Téléphone :</strong> {tx.phone}</li>
@@ -23,36 +23,33 @@ function DetailModal({ isOpen, onClose, tx }) {
           <li><strong>Équivalent :</strong> {tx.converted} {tx.to}</li>
           <li><strong>Statut :</strong> {tx.status}</li>
 
-          {/* Ajout des nouveaux champs */}
+          {/* nouveaux champs */}
           {tx.paymentMethod && (
-            <li><strong>Moyen de paiement :</strong> {tx.paymentMethod}</li>
+            <li><strong>Moyen paiement :</strong> {tx.paymentMethod}</li>
           )}
           {tx.paymentDetails && (
             <li><strong>Détails paiement :</strong> {tx.paymentDetails}</li>
           )}
-
+          {tx.receiveMethod && (
+            <li><strong>Moyen réception :</strong> {tx.receiveMethod}</li>
+          )}
+          {tx.receiveDetails && (
+            <li><strong>Détails réception :</strong> {tx.receiveDetails}</li>
+          )}
           {tx.address && (
-            <li>
-              <strong>
-                {tx.to === 'XOF' || tx.to === 'USD' || tx.to === 'EUR'
-                  ? 'Numéro de paiement :'
-                  : 'Adresse crypto :'}
-              </strong>{" "}
-              {tx.address}
-            </li>
+            <li><strong>Adresse crypto :</strong> {tx.address}</li>
           )}
 
           {tx.proofFilename && (
             <li className="mt-3">
-              <strong>Preuve : |{" "}
-                <a
-                  href={`/uploads/${encodeURIComponent(tx.proofFilename)}`}
-                  download
-                  className="text-green-600 underline text-sm"
-                >
-                  Télécharger
-                </a>
-              </strong><br />
+              <strong>Preuve : </strong>
+              <a
+                href={`/uploads/${encodeURIComponent(tx.proofFilename)}`}
+                download
+                className="text-green-600 underline text-sm"
+              >
+                Télécharger
+              </a>
             </li>
           )}
         </ul>
@@ -67,115 +64,89 @@ function DetailModal({ isOpen, onClose, tx }) {
   );
 }
 
-// Protection SSR de la page Admin
+// SSR protection
 export async function getServerSideProps({ req }) {
-  const cookies = parse(req.headers.cookie || "");
-  if (!cookies.auth) {
-    return {
-      redirect: { destination: "/admin/login", permanent: false },
-    };
+  const cookies = parse(req.headers.cookie||"");
+  if(!cookies.auth){
+    return { redirect:{ destination:"/admin/login", permanent:false } };
   }
-  let auth;
-  try {
-    auth = JSON.parse(cookies.auth);
-  } catch {
-    auth = null;
+  let auth = null;
+  try{ auth=JSON.parse(cookies.auth); }catch{}
+  if(!auth || auth.user!==process.env.ADMIN_USER){
+    return { redirect:{ destination:"/admin/login", permanent:false } };
   }
-  if (!auth || auth.user !== process.env.ADMIN_USER) {
-    return {
-      redirect: { destination: "/admin/login", permanent: false },
-    };
-  }
-  return { props: {} };
+  return { props:{} };
 }
 
 export default function AdminPage() {
   const router = useRouter();
-  const [transactions, setTransactions] = useState([]);
-  const [filtered, setFiltered] = useState([]);
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [searchId, setSearchId] = useState("");
-  const [detailTx, setDetailTx] = useState(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [transactions,setTransactions] = useState([]);
+  const [filtered,setFiltered] = useState([]);
+  const [statusFilter,setStatusFilter] = useState("all");
+  const [dateFrom,setDateFrom] = useState("");
+  const [dateTo,setDateTo] = useState("");
+  const [searchId,setSearchId] = useState("");
+  const [detailTx,setDetailTx] = useState(null);
+  const [isDetailOpen,setIsDetailOpen] = useState(false);
+  const [rates,setRates] = useState({});
+  const [editingRates,setEditingRates] = useState({});
 
-  const [rates, setRates] = useState({});
-  const [editingRates, setEditingRates] = useState({});
+  useEffect(()=>{
+    fetch("/api/admin/transactions",{ credentials:"include" })
+      .then(r=>r.json()).then(data=>{ setTransactions(data); setFiltered(data); });
+    fetch("/api/admin/rates",{ credentials:"include" })
+      .then(r=>r.json()).then(({rates})=>{ setRates(rates); setEditingRates(rates); });
+  },[]);
 
-  useEffect(() => {
-    fetch("/api/admin/transactions", { credentials: "include" })
-      .then(res => res.json())
-      .then(data => {
-        setTransactions(data);
-        setFiltered(data);
-      });
-
-    fetch("/api/admin/rates", { credentials: "include" })
-      .then(r => r.json())
-      .then(({ rates }) => {
-        setRates(rates);
-        setEditingRates(rates);
-      });
-  }, []);
-
-  useEffect(() => {
-    let data = [...transactions];
-    if (searchId.trim()) {
-      data = data.filter(tx => tx._id === searchId.trim());
+  useEffect(()=>{
+    let data=[...transactions];
+    if(searchId.trim()){
+      data=data.filter(tx=>tx._id===searchId.trim());
     } else {
-      if (statusFilter !== "all") {
-        data = data.filter(tx => tx.status === statusFilter);
-      }
-      if (dateFrom) {
-        data = data.filter(tx => new Date(tx.createdAt) >= new Date(dateFrom));
-      }
-      if (dateTo) {
-        const toDate = new Date(dateTo);
-        toDate.setHours(23, 59, 59, 999);
-        data = data.filter(tx => new Date(tx.createdAt) <= toDate);
+      if(statusFilter!=="all")
+        data=data.filter(tx=>tx.status===statusFilter);
+      if(dateFrom)
+        data=data.filter(tx=>new Date(tx.createdAt)>=new Date(dateFrom));
+      if(dateTo){
+        const to=new Date(dateTo); to.setHours(23,59,59,999);
+        data=data.filter(tx=>new Date(tx.createdAt)<=to);
       }
     }
     setFiltered(data);
-  }, [transactions, statusFilter, dateFrom, dateTo, searchId]);
+  },[transactions,statusFilter,dateFrom,dateTo,searchId]);
 
-  const updateStatus = async (id, newStatus) => {
-    const res = await fetch("/api/admin/update-status", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status: newStatus }),
+  const updateStatus = async (id,newStatus)=>{
+    const res = await fetch("/api/admin/update-status",{
+      method:"POST", credentials:"include",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({id,status:newStatus})
     });
-    if (res.ok) {
-      setTransactions(txns =>
-        txns.map(tx => tx._id === id ? { ...tx, status: newStatus } : tx)
-      );
+    if(res.ok){
+      setTransactions(txs=>txs.map(tx=>tx._id===id?{...tx,status:newStatus}:tx));
     }
   };
 
-  const exportFiltered = (format) => {
-    const params = new URLSearchParams();
-    if (statusFilter !== "all") params.set("status", statusFilter);
-    if (dateFrom) params.set("dateFrom", dateFrom);
-    if (dateTo) params.set("dateTo", dateTo);
-    window.location.href = `/api/admin/export?format=${format}&${params.toString()}`;
+  const exportFiltered = fmt=>{
+    const p=new URLSearchParams();
+    if(statusFilter!=="all") p.set("status",statusFilter);
+    if(dateFrom) p.set("dateFrom",dateFrom);
+    if(dateTo) p.set("dateTo",dateTo);
+    window.location.href=`/api/admin/export?format=${fmt}&${p.toString()}`;
   };
 
-  const handleLogout = async () => {
-    await fetch("/api/auth/logout", { credentials: "include" });
+  const handleLogout = async ()=>{
+    await fetch("/api/auth/logout",{ credentials:"include" });
     router.push("/admin/login");
   };
 
-  const saveRates = async () => {
-    await fetch("/api/admin/rates", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rates: editingRates }),
+  const saveRates = async ()=>{
+    await fetch("/api/admin/rates",{
+      method:"POST", credentials:"include",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ rates: editingRates })
     });
     setRates(editingRates);
   };
-
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex items-center mb-4">
