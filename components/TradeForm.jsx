@@ -309,15 +309,6 @@ export default function TradeForm() {
                   {paymentInstructions[paymentMethod]}
                 </p>
               )}
-              <label className="block mb-2">Compte / Numéro (paiement)</label>
-              <input
-                type="text"
-                required
-                className="w-full border rounded-lg p-2 mb-4"
-                placeholder="Ex : RIB ou mobile"
-                value={paymentDetails}
-                onChange={e=>setPaymentDetails(e.target.value)}
-              />
 
               {/* réception */}
               <label className="block mb-2 mt-4">Moyen de réception</label>
