@@ -1,10 +1,13 @@
 // pages/api/rates.js
-import fs from "fs";
-import path from "path";
+import { connectToDatabase } from "../../lib/mongodb";
+import Rate from "/models/rate";
 
-export default function handler(req, res) {
-  const filePath = path.join(process.cwd(), "data", "rates.json");
-  const raw = fs.readFileSync(filePath, "utf-8");
-  const rates = JSON.parse(raw);
-  return res.status(200).json({ rates });
+export default async function handler(req, res) {
+  await connectToDatabase();
+  const docs = await Rate.find({});
+  const rates = docs.reduce((acc, { currency, value }) => {
+    acc[currency] = value;
+    return acc;
+  }, {});
+  res.status(200).json({ rates });
 }
