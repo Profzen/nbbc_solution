@@ -51,7 +51,8 @@ export default function LoginPage() {
         />
         <button
           type="submit"
-          className="w-full bg-primary text-white py-2 rounded hover:bg-orange-600"
+          className="w-full bg-primary text-white py-2 rounded hover:bg-orange-600 "
+          
         >
           Se connecter
         </button>

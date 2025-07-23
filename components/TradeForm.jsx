@@ -138,12 +138,14 @@ export default function TradeForm() {
   };
 
   const paymentInstructions = {
-    Ecobank:      "RIB Ecobank : 000 111 222",
-    "Moov money": "Moov Money : 98 90 10 32",
-    "Mix by yas": "Mix by Yas : 93 79 32 32",
-    Mtn:          "MTN Money : 88 543 21 09",
-    Paypal:       "PayPal : paypal@cryptofiat.com",
-    Wave:         "Wave : 70 321 54 98",
+    Ecobank:      "N°compte Ecobank : 141134502002",
+    "Moov money": "Moov Money : 96843308",
+    "Mix by yas": "Lancez un retrais Mix by Yas au Point De Vente 3186328(ETS ASSIMA)",
+    Mtn:          "MTN Money : Veuillez nous contacter au +22898901032 pour les details",
+    Paypal:       "PayPal : ficho8822@gmail.com",
+    Wave:         "Wave : Veuillez nous contacter au +22898901032 pour les details",
+    zelle:       "Zelle : Veuillez nous contacter au +22898901032 pour les details "
+
   };
   const defaultCryptoAddress = "0xAbC1234Def5678GhI9012jKlm3456NoPq7890rs";
 
