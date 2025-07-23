@@ -68,11 +68,13 @@ export default function TradeForm() {
   const [rates, setRates] = useState(null);
 
   // Chargement des taux
-  useEffect(()=>{
-    if(rates===null){
-      fetch("/api/rates").then(r=>r.json()).then(({rates})=>setRates(rates));
-    }
-  },[rates]);
+  // Chargement des taux à chaque chargement de la page
+  useEffect(() => {
+    fetch("/api/rates")
+    .then(r => r.json())
+    .then(({ rates }) => setRates(rates));
+  }, []);
+
 
   // Calcul preview (+17% si fiat→crypto)
   useEffect(()=>{

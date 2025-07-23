@@ -156,15 +156,36 @@ export default function AdminPage() {
     router.push("/admin/login");
   };
 
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+
+
   const saveRates = async () => {
+  setSaving(true);
+  setMessage("");
+
+  try {
     await fetch("/api/admin/rates", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ rates: editingRates }),
     });
-    setRates(editingRates);
-  };
+
+    const res = await fetch("/api/admin/rates", { credentials: "include" });
+    const { rates } = await res.json();
+    setEditingRates(rates);
+
+    setMessage("✅ Taux mis à jour avec succès !");
+  } catch (err) {
+    console.error(err);
+    setMessage("❌ Une erreur s'est produite lors de l'enregistrement.");
+  }
+
+  setSaving(false);
+};
+
+
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -201,12 +222,21 @@ export default function AdminPage() {
             </div>
           ))}
         </div>
-        <button
-          onClick={saveRates}
-          className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-        >
-          Enregistrer les taux
-        </button>
+        <div className="mt-4">
+          <button
+            onClick={saveRates}
+            disabled={saving}
+            className={`bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 ${
+              saving ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            {saving ? "Enregistrement..." : "Enregistrer les taux"}
+          </button>
+          {message && (
+            <p className="mt-2 text-sm font-medium text-green-700">{message}</p>
+          )}
+        </div>
+
       </div>
 
       {/* filtres, recherche, export */}
