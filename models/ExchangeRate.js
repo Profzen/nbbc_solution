@@ -1,8 +1,7 @@
 // models/ExchangeRate.js
 import mongoose from "mongoose";
 
-const exchangeRateSchema = new mongoose.Schema({
-  _id: { type: String, default: "default" },
+const ExchangeRateSchema = new mongoose.Schema({
   rates: {
     type: Map,
     of: Number,
@@ -14,5 +13,4 @@ const exchangeRateSchema = new mongoose.Schema({
   },
 });
 
-export default mongoose.models.ExchangeRate ||
-  mongoose.model("ExchangeRate", exchangeRateSchema, "exchange_rates");
+export default mongoose.models.ExchangeRate || mongoose.model("ExchangeRate", ExchangeRateSchema);

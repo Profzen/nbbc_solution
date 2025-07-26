@@ -1,5 +1,3 @@
-// components/TradeForm.jsx
-
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/router";
@@ -38,157 +36,189 @@ function Modal({ isOpen, onClose, title, children }) {
 export default function TradeForm() {
   const router = useRouter();
 
-  // États de base
   const [amount, setAmount] = useState("");
   const [fromCurrency, setFromCurrency] = useState("BTC");
   const [toCurrency, setToCurrency] = useState("USD");
   const [preview, setPreview] = useState(null);
 
-  // Modal & formulaire
+  const [rates, setRates] = useState(null);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalType, setModalType] = useState(""); // "crypto2fiat" | "fiat2crypto" | "fiat2fiat"
+  const [modalType, setModalType] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [paymentDetails, setPaymentDetails] = useState("");
   const [receiveMethod, setReceiveMethod] = useState("");
   const [receiveDetails, setReceiveDetails] = useState("");
   const [proofFile, setProofFile] = useState(null);
 
-  // Infos client
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [country, setCountry] = useState("");
 
-  // Confirmation + loader
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const currencies = ["BTC","ETH","USDT","USD","EUR","XOF"];
-  const [rates, setRates] = useState(null);
+  const currencies = ["BTC", "ETH", "USDT", "USD", "EUR", "XOF"];
 
-  // Chargement des taux
-  // Chargement des taux à chaque chargement de la page
   useEffect(() => {
-    fetch("/api/rates")
-    .then(r => r.json())
-    .then(({ rates }) => setRates(rates));
+    const fetchRates = async () => {
+      try {
+        const res = await fetch("/api/rates");
+        const data = await res.json();
+        setRates(data.rates);
+        console.log("Rates:", data.rates);
+      } catch (err) {
+        console.error("Erreur lors du chargement des taux:", err);
+      }
+    };
+
+    fetchRates();
   }, []);
 
+  useEffect(() => {
+    if (!rates || !amount || isNaN(amount)) {
+      setPreview(null);
+      return;
+    }
 
-  // Calcul preview (+17% si fiat→crypto)
-  useEffect(()=>{
-    if(!rates||!amount||isNaN(amount)){ setPreview(null); return; }
-    const raw = parseFloat(amount)*rates[fromCurrency]/rates[toCurrency];
-    const cryptoList = ["BTC","ETH","USDT"];
-    const isFiatToCrypto = cryptoList.includes(toCurrency)&&!cryptoList.includes(fromCurrency);
-    const adjusted = isFiatToCrypto? raw/1.17 : raw;
+    const raw = (parseFloat(amount) * rates[fromCurrency]) / rates[toCurrency];
+    const cryptoList = ["BTC", "ETH", "USDT"];
+    const isFiatToCrypto =
+      cryptoList.includes(toCurrency) && !cryptoList.includes(fromCurrency);
+    const adjusted = isFiatToCrypto ? raw / 1.17 : raw;
     setPreview(adjusted.toFixed(2));
-  },[amount,fromCurrency,toCurrency,rates]);
+  }, [amount, fromCurrency, toCurrency, rates]);
 
-  const handleConvert = ()=>{
-    const cryptoList = ["BTC","ETH","USDT"];
-    const isCryptoToFiat = cryptoList.includes(fromCurrency)&&!cryptoList.includes(toCurrency);
-    const isFiatToCrypto = cryptoList.includes(toCurrency)&&!cryptoList.includes(fromCurrency);
-    const type = isCryptoToFiat? "crypto2fiat" : isFiatToCrypto? "fiat2crypto" : "fiat2fiat";
+  const handleConvert = () => {
+    const cryptoList = ["BTC", "ETH", "USDT"];
+    const isCryptoToFiat =
+      cryptoList.includes(fromCurrency) && !cryptoList.includes(toCurrency);
+    const isFiatToCrypto =
+      cryptoList.includes(toCurrency) && !cryptoList.includes(fromCurrency);
+    const type = isCryptoToFiat
+      ? "crypto2fiat"
+      : isFiatToCrypto
+      ? "fiat2crypto"
+      : "fiat2fiat";
     setModalType(type);
-    setPaymentMethod(""); setPaymentDetails("");
-    setReceiveMethod(""); setReceiveDetails("");
+    setPaymentMethod("");
+    setPaymentDetails("");
+    setReceiveMethod("");
+    setReceiveDetails("");
     setProofFile(null);
     setIsModalOpen(true);
   };
 
-  const handleSubmit = async e=>{
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     const form = new FormData();
-    form.append("amount",amount);
-    form.append("from",fromCurrency);
-    form.append("to",toCurrency);
-    form.append("converted",preview);
-    form.append("firstName",firstName);
-    form.append("lastName",lastName);
-    form.append("phone",phone);
-    form.append("email",email);
-    form.append("country",country);
+    form.append("amount", amount);
+    form.append("from", fromCurrency);
+    form.append("to", toCurrency);
+    form.append("converted", preview);
+    form.append("firstName", firstName);
+    form.append("lastName", lastName);
+    form.append("phone", phone);
+    form.append("email", email);
+    form.append("country", country);
 
-    form.append("paymentMethod",paymentMethod);
-    form.append("paymentDetails",paymentDetails);
-    if(modalType==="fiat2fiat"){
-      form.append("receiveMethod",receiveMethod);
-      form.append("receiveDetails",receiveDetails);
-    } else if(modalType==="crypto2fiat"){
-      // address du wallet n’est pas soumise au serveur, juste affichée
-    } else {
-      // fiat2crypto : l’adresse de réception de crypto
-      form.append("address",receiveDetails);
+    form.append("paymentMethod", paymentMethod);
+    form.append("paymentDetails", paymentDetails);
+
+    if (modalType === "fiat2fiat") {
+      form.append("receiveMethod", receiveMethod);
+      form.append("receiveDetails", receiveDetails);
+    } else if (modalType === "fiat2crypto") {
+      form.append("address", receiveDetails);
     }
 
-    form.append("proof",proofFile);
+    form.append("proof", proofFile);
 
-    await fetch("/api/send-transaction-email",{method:"POST",body:form}).catch(console.error);
+    await fetch("/api/send-transaction-email", {
+      method: "POST",
+      body: form,
+    }).catch(console.error);
 
     setIsSubmitting(false);
     setIsModalOpen(false);
     setIsConfirmOpen(true);
   };
 
-  const handleFinish = ()=>{
+  const handleFinish = () => {
     setIsConfirmOpen(false);
     router.push("/history");
   };
 
   const paymentInstructions = {
-    Ecobank:      "N°compte Ecobank : 141134502002",
+    Ecobank: "N°compte Ecobank : 141134502002",
     "Moov money": "Moov Money : 96843308",
     "Mix by yas": "Lancez un retrais Mix by Yas au Point De Vente 3186328(ETS ASSIMA)",
-    Mtn:          "MTN Money : Veuillez nous contacter au +22898901032 pour les details",
-    Paypal:       "PayPal : ficho8822@gmail.com",
-    Wave:         "Wave : Veuillez nous contacter au +22898901032 pour les details",
-    zelle:       "Zelle : Veuillez nous contacter au +22898901032 pour les details "
-
+    Mtn: "MTN Money : Veuillez nous contacter au +22898901032 pour les details",
+    Paypal: "PayPal : ficho8822@gmail.com",
+    Wave: "Wave : Veuillez nous contacter au +22898901032 pour les details",
+    zelle: "Zelle : Veuillez nous contacter au +22898901032 pour les details",
   };
+
   const defaultCryptoAddress = "0xAbC1234Def5678GhI9012jKlm3456NoPq7890rs";
 
   return (
     <div className="container mx-auto p-8">
       <motion.div
         className="bg-white p-6 rounded-2xl shadow-xl"
-        initial={{opacity:0,y:20}} animate={{opacity:1,y:0}}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
       >
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <label className="block mb-1">De</label>
-            <select className="w-full border rounded-lg p-3"
+            <select
+              className="w-full border rounded-lg p-3"
               value={fromCurrency}
-              onChange={e=>setFromCurrency(e.target.value)}
+              onChange={(e) => setFromCurrency(e.target.value)}
             >
-              {currencies.map(c=> <option key={c} value={c}>{c}</option>)}
+              {currencies.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
             </select>
           </div>
           <div className="flex-1">
             <label className="block mb-1">Montant</label>
-            <input type="number" placeholder="0.00"
+            <input
+              type="number"
+              placeholder="0.00"
               className="w-full border rounded-lg p-3"
               value={amount}
-              onChange={e=>setAmount(e.target.value)}
+              onChange={(e) => setAmount(e.target.value)}
             />
           </div>
           <div className="flex-1">
             <label className="block mb-1">Vers</label>
-            <select className="w-full border rounded-lg p-3"
+            <select
+              className="w-full border rounded-lg p-3"
               value={toCurrency}
-              onChange={e=>setToCurrency(e.target.value)}
+              onChange={(e) => setToCurrency(e.target.value)}
             >
-              {currencies.map(c=> <option key={c} value={c}>{c}</option>)}
+              {currencies.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
             </select>
           </div>
         </div>
         {preview && (
           <p className="mt-4 text-center text-lg text-gray-600">
-            Équivalent : <strong>{preview} {toCurrency}</strong>
+            Équivalent : <strong>{preview} {toCurrency} <br/>
+            Svp Veuillez bien retenir le montant que vous avez entré pour la conversion <br/>
+            Vous devrais envoyer exatement ce montant a nun numéro ou adresse qui vous sera indiqué</strong>
           </p>
+          
         )}
         <button
           onClick={handleConvert}

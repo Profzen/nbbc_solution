@@ -4,33 +4,28 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { format } from "date-fns";
 
-// Liste des monnaies crypto
 const CRYPTOS = ["BTC", "ETH", "USDT"];
 
-// Modal de détails
 function DetailModal({ isOpen, onClose, tx }) {
   if (!isOpen || !tx) return null;
 
   const isCryptoToFiat = CRYPTOS.includes(tx.from) && !CRYPTOS.includes(tx.to);
   const isFiatToCrypto = !CRYPTOS.includes(tx.from) && CRYPTOS.includes(tx.to);
-  const isFiatToFiat  = !CRYPTOS.includes(tx.from) && !CRYPTOS.includes(tx.to);
+  const isFiatToFiat = !CRYPTOS.includes(tx.from) && !CRYPTOS.includes(tx.to);
 
-  // Toujours afficher tous les libellés, fallback sur "-"
-  const moyenPaiement   = isCryptoToFiat ? "-" : tx.paymentMethod   || "-";
-  const detailsPaiement = isCryptoToFiat ? "-" : tx.paymentDetails  || "-";
-  const moyenReception  = isCryptoToFiat 
-    ? tx.paymentMethod   || "-" 
-    : isFiatToFiat 
-      ? tx.paymentMethod || "-" 
-      : "-";
-  const detailsReception= isCryptoToFiat 
-    ? tx.paymentDetails  || "-" 
-    : isFiatToFiat 
-      ? tx.paymentDetails|| "-" 
-      : "-";
-  const adresseCrypto   = isFiatToCrypto 
-    ? tx.address        || "-" 
+  const moyenPaiement = isCryptoToFiat ? "-" : tx.paymentMethod || "-";
+  const detailsPaiement = isCryptoToFiat ? "-" : tx.paymentDetails || "-";
+  const moyenReception = isCryptoToFiat
+    ? tx.paymentMethod || "-"
+    : isFiatToFiat
+    ? tx.paymentMethod || "-"
     : "-";
+  const detailsReception = isCryptoToFiat
+    ? tx.paymentDetails || "-"
+    : isFiatToFiat
+    ? tx.paymentDetails || "-"
+    : "-";
+  const adresseCrypto = isFiatToCrypto ? tx.address || "-" : "-";
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -47,16 +42,12 @@ function DetailModal({ isOpen, onClose, tx }) {
           <li><strong>Montant :</strong> {tx.amount} {tx.from}</li>
           <li><strong>Équivalent :</strong> {tx.converted} {tx.to}</li>
           <li><strong>Statut :</strong> {tx.status}</li>
-
           <li><strong>Moyen de paiement :</strong> {moyenPaiement}</li>
           <li><strong>Détails paiement :</strong> {detailsPaiement}</li>
-
           <li><strong>Moyen de réception :</strong> {moyenReception}</li>
           <li><strong>Détails réception :</strong> {detailsReception}</li>
-
           <li><strong>Adresse crypto :</strong> {adresseCrypto}</li>
-
-          {tx.proofFilename && (
+          {/*{tx.proofFilename && (
             <li className="mt-3">
               <strong>Preuve :</strong>{" "}
               <a
@@ -67,7 +58,7 @@ function DetailModal({ isOpen, onClose, tx }) {
                 Télécharger
               </a>
             </li>
-          )}
+          )}*/}
         </ul>
         <button
           onClick={onClose}
@@ -80,14 +71,15 @@ function DetailModal({ isOpen, onClose, tx }) {
   );
 }
 
-// Protection SSR
 export async function getServerSideProps({ req }) {
   const cookies = parse(req.headers.cookie || "");
   if (!cookies.auth) {
     return { redirect: { destination: "/admin/login", permanent: false } };
   }
   let auth = null;
-  try { auth = JSON.parse(cookies.auth); } catch {}
+  try {
+    auth = JSON.parse(cookies.auth);
+  } catch {}
   if (!auth || auth.user !== process.env.ADMIN_USER) {
     return { redirect: { destination: "/admin/login", permanent: false } };
   }
@@ -97,23 +89,40 @@ export async function getServerSideProps({ req }) {
 export default function AdminPage() {
   const router = useRouter();
   const [transactions, setTransactions] = useState([]);
-  const [filtered, setFiltered]     = useState([]);
+  const [filtered, setFiltered] = useState([]);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [dateFrom, setDateFrom]     = useState("");
-  const [dateTo, setDateTo]         = useState("");
-  const [searchId, setSearchId]     = useState("");
-  const [detailTx, setDetailTx]     = useState(null);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [searchId, setSearchId] = useState("");
+  const [detailTx, setDetailTx] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [editingRates, setEditingRates] = useState({});
+  const [editingRates, setEditingRates] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     fetch("/api/admin/transactions", { credentials: "include" })
       .then(res => res.json())
-      .then(data => { setTransactions(data); setFiltered(data); });
+      .then(data => {
+        setTransactions(data);
+        setFiltered(data);
+      });
 
-    fetch("/api/admin/rates", { credentials: "include" })
-      .then(r => r.json())
-      .then(({ rates }) => setEditingRates(rates));
+    const fetchRates = async () => {
+      try {
+        const response = await fetch("/api/admin/rates");
+        const data = await response.json();
+        if (response.ok) {
+          setEditingRates(data.rates);
+        } else {
+          console.error("Erreur lors de la récupération des taux", data.error);
+        }
+      } catch (error) {
+        console.error("Erreur fetchRates", error);
+      }
+    };
+
+    fetchRates();
   }, []);
 
   useEffect(() => {
@@ -127,7 +136,7 @@ export default function AdminPage() {
         data = data.filter(tx => new Date(tx.createdAt) >= new Date(dateFrom));
       if (dateTo) {
         const toDate = new Date(dateTo);
-        toDate.setHours(23,59,59,999);
+        toDate.setHours(23, 59, 59, 999);
         data = data.filter(tx => new Date(tx.createdAt) <= toDate);
       }
     }
@@ -136,18 +145,19 @@ export default function AdminPage() {
 
   const updateStatus = async (id, newStatus) => {
     await fetch("/api/admin/update-status", {
-      method: "POST", credentials: "include",
+      method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status: newStatus })
     });
-    setTransactions(txns => txns.map(tx => tx._id===id?{...tx,status:newStatus}:tx));
+    setTransactions(txns => txns.map(tx => tx._id === id ? { ...tx, status: newStatus } : tx));
   };
 
   const exportFiltered = (format) => {
     const params = new URLSearchParams();
-    if (statusFilter!=="all") params.set("status", statusFilter);
+    if (statusFilter !== "all") params.set("status", statusFilter);
     if (dateFrom) params.set("dateFrom", dateFrom);
-    if (dateTo)   params.set("dateTo", dateTo);
+    if (dateTo) params.set("dateTo", dateTo);
     window.location.href = `/api/admin/export?format=${format}&${params}`;
   };
 
@@ -156,36 +166,38 @@ export default function AdminPage() {
     router.push("/admin/login");
   };
 
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
+  const handleSaveRates = async () => {
+    setSaving(true);
+    setMessage("");
 
+    try {
+      const response = await fetch("/api/admin/update-rates", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(editingRates),
+      });
 
-  const saveRates = async () => {
-  setSaving(true);
-  setMessage("");
+      const data = await response.json();
 
-  try {
-    await fetch("/api/admin/rates", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rates: editingRates }),
-    });
+      if (!response.ok) {
+        throw new Error(data.message || "Erreur serveur");
+      }
 
-    const res = await fetch("/api/admin/rates", { credentials: "include" });
-    const { rates } = await res.json();
-    setEditingRates(rates);
+      const res = await fetch("/api/admin/rates", { credentials: "include" });
+      const updatedRates = await res.json();
+      setEditingRates(updatedRates.rates);
 
-    setMessage("✅ Taux mis à jour avec succès !");
-  } catch (err) {
-    console.error(err);
-    setMessage("❌ Une erreur s'est produite lors de l'enregistrement.");
-  }
+      setMessage("✅ Taux mis à jour avec succès !");
+    } catch (err) {
+      console.error(err);
+      setMessage("❌ Une erreur s'est produite lors de l'enregistrement.");
+    }
 
-  setSaving(false);
-};
-
-
+    setSaving(false);
+  };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -198,48 +210,50 @@ export default function AdminPage() {
           Déconnexion
         </button>
       </div>
-  
 
-      {/* gestion des taux */}
+      {/* Taux */}
       <div className="bg-white p-4 rounded-lg shadow mb-6">
         <h2 className="font-semibold mb-3">⚙️ Taux d’échange</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {Object.entries(editingRates).map(([cur, val]) => (
-            <div key={cur}>
-              <label className="block mb-1 text-sm">{cur}</label>
-              <input
-                type="number"
-                step="any"
-                className="w-full border rounded px-2 py-1"
-                value={val}
-                onChange={(e) =>
-                  setEditingRates({
-                    ...editingRates,
-                    [cur]: parseFloat(e.target.value) || 0,
-                  })
-                }
-              />
-            </div>
-          ))}
-        </div>
-        <div className="mt-4">
-          <button
-            onClick={saveRates}
-            disabled={saving}
-            className={`bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 ${
-              saving ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-          >
-            {saving ? "Enregistrement..." : "Enregistrer les taux"}
-          </button>
-          {message && (
-            <p className="mt-2 text-sm font-medium text-green-700">{message}</p>
-          )}
-        </div>
 
+        {editingRates ? (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Object.entries(editingRates).map(([cur, val]) => (
+                <div key={cur}>
+                  <label className="block mb-1 text-sm">{cur}</label>
+                  <input
+                    type="number"
+                    className="w-full p-2 border rounded"
+                    value={val}
+                    onChange={(e) =>
+                      setEditingRates((prev) => ({
+                        ...prev,
+                        [cur]: parseFloat(e.target.value),
+                      }))
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="mt-4">
+              <button
+                onClick={handleSaveRates}
+                disabled={saving}
+                className={`bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 ${saving ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                {saving ? "Enregistrement..." : "Enregistrer les taux"}
+              </button>
+              {message && (
+                <p className="mt-2 text-sm font-medium text-green-700">{message}</p>
+              )}
+            </div>
+          </>
+        ) : (
+          <p>Chargement des taux...</p>
+        )}
       </div>
 
-      {/* filtres, recherche, export */}
+      {/* Filtres */}
       <div className="bg-white p-4 rounded-lg shadow mb-6">
         <div className="flex flex-col md:flex-row items-center gap-4">
           <div>
@@ -302,7 +316,7 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* tableau */}
+      {/* Transactions */}
       <div className="overflow-x-auto bg-white rounded-lg shadow">
         <table className="w-full text-sm">
           <thead className="bg-gray-100">
@@ -363,7 +377,6 @@ export default function AdminPage() {
         </table>
       </div>
 
-      {/* Modal Détails */}
       <DetailModal
         isOpen={isDetailOpen}
         tx={detailTx}

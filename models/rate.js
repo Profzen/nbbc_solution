@@ -1,9 +1,16 @@
-// models/Rate.js
-import { Schema, model, models } from "mongoose";
+import mongoose from "mongoose";
 
-const RateSchema = new Schema({
-  currency: { type: String, unique: true },
-  value:    { type: Number, required: true },
+const RateSchema = new mongoose.Schema({
+  rates: {
+    type: Map,
+    of: Number,
+    required: true
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
 });
 
-export default models.Rate || model("Rate", RateSchema);
+// Évite l'erreur "Cannot overwrite model" en vérifiant s'il existe déjà
+export default mongoose.models.rates || mongoose.model("rates", RateSchema);
