@@ -87,7 +87,7 @@ export default function TradeForm() {
     const cryptoList = ["BTC", "ETH", "USDT"];
     const isFiatToCrypto =
       cryptoList.includes(toCurrency) && !cryptoList.includes(fromCurrency);
-    const adjusted = isFiatToCrypto ? raw / 1.17 : raw;
+    const adjusted = isFiatToCrypto ? raw / 1.05 : raw;
     setPreview(adjusted.toFixed(2));
   }, [amount, fromCurrency, toCurrency, rates]);
 
