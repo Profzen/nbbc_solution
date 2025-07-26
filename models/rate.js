@@ -13,4 +13,4 @@ const RateSchema = new mongoose.Schema({
 });
 
 // Évite l'erreur "Cannot overwrite model" en vérifiant s'il existe déjà
-export default mongoose.models.rates || mongoose.model("rates", RateSchema);
+export default mongoose.models.Rate || mongoose.model("Rate", RateSchema);
