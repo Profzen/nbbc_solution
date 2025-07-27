@@ -214,11 +214,11 @@ export default function TradeForm() {
         </div>
         {preview && (
           <p className="mt-4 text-center text-lg text-gray-600">
-            Équivalent : <strong>{preview} {toCurrency} <br/>
+            Équivalent : <strong>{preview} {toCurrency} <br/> 
             Svp Veuillez bien retenir le montant que vous avez entré pour la conversion <br/>
-            Vous devrais envoyer exatement ce montant a nun numéro ou adresse qui vous sera indiqué</strong>
+            Vous devrais envoyé exatement ce montant a nun numéro ou adresse qui vous sera indiqué
+            </strong>
           </p>
-          
         )}
         <button
           onClick={handleConvert}

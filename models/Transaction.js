@@ -24,7 +24,7 @@ const transactionSchema = new mongoose.Schema({
   default: "en attente",
 },
 
-});
+}); 
 
 // ⚠️ Important : spécifie la collection "transactions"
 export default mongoose.models.Transaction ||

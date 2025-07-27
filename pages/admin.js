@@ -144,14 +144,38 @@ export default function AdminPage() {
   }, [transactions, statusFilter, dateFrom, dateTo, searchId]);
 
   const updateStatus = async (id, newStatus) => {
-    await fetch("/api/admin/update-status", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status: newStatus })
-    });
-    setTransactions(txns => txns.map(tx => tx._id === id ? { ...tx, status: newStatus } : tx));
-  };
+  await fetch("/api/admin/update-status", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, status: newStatus })
+  });
+
+  // Mise à jour dans le state
+  setTransactions(txns => txns.map(tx => tx._id === id ? { ...tx, status: newStatus } : tx));
+
+  // Si validé → envoi email de confirmation
+  if (newStatus === "validé") {
+    try {
+      const res = await fetch("/api/send-confirmation-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        console.error("Erreur email confirmation :", data.message);
+        alert("⚠️ Email de confirmation non envoyé.");
+      } else {
+        console.log("Email de confirmation envoyé.");
+      }
+    } catch (e) {
+      console.error("Erreur réseau lors de l'envoi d'email", e);
+    }
+  }
+};
+
 
   const exportFiltered = (format) => {
     const params = new URLSearchParams();
