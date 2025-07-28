@@ -275,11 +275,7 @@ export default function TradeForm() {
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>
-              {paymentMethod && (
-                <p className="mb-3 text-sm italic text-gray-700">
-                  {paymentInstructions[paymentMethod]}
-                </p>
-              )}
+              
               <label className="block mb-2">Compte / Numéro pour paiement</label>
               <input
                 type="text"
@@ -357,11 +353,7 @@ export default function TradeForm() {
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>
-              {receiveMethod && (
-                <p className="mb-3 text-sm italic text-gray-700">
-                  {paymentInstructions[receiveMethod]}
-                </p>
-              )}
+
               <label className="block mb-2">Compte / Numéro (réception)</label>
               <input
                 type="text"
