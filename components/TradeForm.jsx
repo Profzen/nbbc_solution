@@ -158,12 +158,13 @@ export default function TradeForm() {
     "Moov money": "Moov Money : 96843308",
     "Mix by yas": "Lancez un retrais Mix by Yas au Point De Vente 3186328(ETS ASSIMA)",
     Mtn: "MTN Money : Veuillez nous contacter au +22898901032 pour les details",
-    Paypal: "PayPal : ficho8822@gmail.com",
+    Paypal: "PayPal (envoi ami) : ficho8822@gmail.com",
     Wave: "Wave : Veuillez nous contacter au +22898901032 pour les details",
     zelle: "Zelle : Veuillez nous contacter au +22898901032 pour les details",
   };
 
-  const defaultCryptoAddress = "0xAbC1234Def5678GhI9012jKlm3456NoPq7890rs";
+  const defaultCryptoAddress_usdt_ou_btc = "Adresse_usdt_ou_btc_bep20";
+  const defaultCryptoAddress_btc = "Adresse_btc_bep20";
 
   return (
     <div className="container mx-auto p-8">
@@ -260,7 +261,7 @@ export default function TradeForm() {
               <p className="mb-4 text-sm italic text-gray-700">
                 Envoyez vos crypto à l’adresse BEP20 :
                 <code className="block bg-gray-100 p-2 rounded my-2 break-all">
-                  {defaultCryptoAddress}
+                  {defaultCryptoAddress_usdt_ou_btc}
                 </code>
               </p>
               <label className="block mb-2">Moyen de réception (fiat)</label>
