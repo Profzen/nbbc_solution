@@ -10,7 +10,7 @@ export default function APropos() {
     <div className={`${styles.background} min-h-screen text-gray-800 px-4 sm:px-6 md:px-12 py-12`}>
       <div className="max-w-5xl mx-auto">
         <h1 className="text-4xl font-bold text-primary mb-8 text-center">
-          À propos de <span className="text-accent">CryptoFiat</span>
+          À propos de <span className="text-accent">Nexchang</span>
         </h1>
 
         {/* Intro Cards */}
@@ -42,7 +42,7 @@ export default function APropos() {
         <div className="border-l-2 border-accent pl-6 space-y-8 mb-12">
           <div>
             <p className="text-sm text-accent font-semibold">2022</p>
-            <h4 className="text-lg font-bold mb-1">Lancement de CryptoFiat</h4>
+            <h4 className="text-lg font-bold mb-1">Lancement de Nexchang</h4>
             <p>Nous avons commencé avec une idée simple : rendre l’échange crypto plus accessible et rapide pour tous.</p>
           </div>
           <div>
@@ -72,7 +72,7 @@ export default function APropos() {
           <a href="https://www.facebook.com/share/19nNo9rFob/" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
             <FaFacebookF />
           </a>
-          <a href="https://twitter.com/cryptofiat" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
+          <a href="https://twitter.com/Nexchang" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
             <FaTwitter />
           </a>
           <a href="hhttps://www.instagram.com/nbbc_exchange?igsh=MWpnajNkdG85NWxnNA==&utm_source=ig_contact_invite" target="_blank" rel="noopener noreferrer" className="hover:text-primary">

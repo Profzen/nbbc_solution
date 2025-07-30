@@ -59,7 +59,7 @@ export default function Layout({ children }) {
           */}
           <ul className="flex space-x-6">
             <li>
-              <Link href="/apropos" className="hover:text-accent">
+              <Link href="/À propos" className="hover:text-accent">
                 a propos
               </Link>
             </li>
