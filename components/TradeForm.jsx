@@ -163,7 +163,7 @@ export default function TradeForm() {
     zelle: "Zelle : Veuillez nous contacter au +22898901032 pour les details",
   };
 
-  const defaultCryptoAddress_usdt_ou_btc = "Adresse_usdt_ou_btc_bep20";
+  const defaultCryptoAddress_usdt_ou_btc_eth = "0x48e8195e18ee3854a8b4a99ad0ada6fbc850bcff";
   const defaultCryptoAddress_btc = "Adresse_btc_bep20";
 
   return (
@@ -261,7 +261,7 @@ export default function TradeForm() {
               <p className="mb-4 text-sm italic text-gray-700">
                 Envoyez vos crypto à l’adresse BEP20 :
                 <code className="block bg-gray-100 p-2 rounded my-2 break-all">
-                  {defaultCryptoAddress_usdt_ou_btc}
+                  {defaultCryptoAddress_usdt_ou_btc_eth}
                 </code>
               </p>
               <label className="block mb-2">Moyen de réception (fiat)</label>

@@ -120,7 +120,7 @@ Merci pour votre confiance !
     };
     const adminMail = {
       from: `"Nexchang" <${process.env.SMTP_USER}>`,
-      to: "profzzen@gmail.com",
+      to: "NEWBOSSBUSINESSCENTER@GMAIL.COM",
       subject: `🔔 Nouvelle commande : ${from}→${to}`,
       text: `
 Nouvelle commande :
