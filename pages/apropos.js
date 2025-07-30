@@ -72,7 +72,7 @@ export default function APropos() {
           <a href="https://www.facebook.com/share/19nNo9rFob/" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
             <FaFacebookF />
           </a>
-          <a href="https://twitter.com/Nexchang" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
+          <a href="https://twitter.com/cryptofiat" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
             <FaTwitter />
           </a>
           <a href="hhttps://www.instagram.com/nbbc_exchange?igsh=MWpnajNkdG85NWxnNA==&utm_source=ig_contact_invite" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
