@@ -34,7 +34,7 @@ export default function Layout({ children }) {
       {/* Navbar */}
       <nav className="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
         <div className="container mx-auto flex items-center justify-between p-4">
-          <Link href="/" className="text-2xl font-bold text-primary">
+          <Link href="/" className="text-1xl font-bold text-primary">
             NBBC Exchang
           </Link>
           {/*<Link href="/" className="flex items-center">
