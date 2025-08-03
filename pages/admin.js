@@ -32,33 +32,51 @@ function DetailModal({ isOpen, onClose, tx }) {
       <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <h3 className="text-xl font-semibold mb-4">Détails de la transaction</h3>
         <ul className="space-y-2 text-sm">
-          <li><strong>ID :</strong> {tx._id}</li>
-          <li><strong>Date :</strong> {format(new Date(tx.createdAt), "yyyy-MM-dd HH:mm:ss")}</li>
-          <li><strong>Client :</strong> {tx.firstName} {tx.lastName}</li>
-          <li><strong>Email :</strong> {tx.email}</li>
-          <li><strong>Téléphone :</strong> {tx.phone}</li>
-          <li><strong>Pays :</strong> {tx.country}</li>
-          <li><strong>De → Vers :</strong> {tx.from} → {tx.to}</li>
-          <li><strong>Montant :</strong> {tx.amount} {tx.from}</li>
-          <li><strong>Équivalent :</strong> {tx.converted} {tx.to}</li>
-          <li><strong>Statut :</strong> {tx.status}</li>
-          <li><strong>Moyen de paiement :</strong> {moyenPaiement}</li>
-          <li><strong>Détails paiement :</strong> {detailsPaiement}</li>
-          <li><strong>Moyen de réception :</strong> {moyenReception}</li>
-          <li><strong>Détails réception :</strong> {detailsReception}</li>
-          <li><strong>Adresse crypto :</strong> {adresseCrypto}</li>
-          {/*{tx.proofFilename && (
-            <li className="mt-3">
-              <strong>Preuve :</strong>{" "}
-              <a
-                href={`/uploads/${encodeURIComponent(tx.proofFilename)}`}
-                download
-                className="text-green-600 underline text-sm"
-              >
-                Télécharger
-              </a>
-            </li>
-          )}*/}
+          <li>
+            <strong>ID :</strong> {tx._id}
+          </li>
+          <li>
+            <strong>Date :</strong> {format(new Date(tx.createdAt), "yyyy-MM-dd HH:mm:ss")}
+          </li>
+          <li>
+            <strong>Client :</strong> {tx.firstName} {tx.lastName}
+          </li>
+          <li>
+            <strong>Email :</strong> {tx.email}
+          </li>
+          <li>
+            <strong>Téléphone :</strong> {tx.phone}
+          </li>
+          <li>
+            <strong>Pays :</strong> {tx.country}
+          </li>
+          <li>
+            <strong>De → Vers :</strong> {tx.from} → {tx.to}
+          </li>
+          <li>
+            <strong>Montant :</strong> {tx.amount} {tx.from}
+          </li>
+          <li>
+            <strong>Équivalent :</strong> {tx.converted} {tx.to}
+          </li>
+          <li>
+            <strong>Statut :</strong> {tx.status}
+          </li>
+          <li>
+            <strong>Moyen de paiement :</strong> {moyenPaiement}
+          </li>
+          <li>
+            <strong>Détails paiement :</strong> {detailsPaiement}
+          </li>
+          <li>
+            <strong>Moyen de réception :</strong> {moyenReception}
+          </li>
+          <li>
+            <strong>Détails réception :</strong> {detailsReception}
+          </li>
+          <li>
+            <strong>Adresse crypto :</strong> {adresseCrypto}
+          </li>
         </ul>
         <button
           onClick={onClose}
@@ -100,10 +118,19 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
+  // Détection mobile via window width
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   useEffect(() => {
     fetch("/api/admin/transactions", { credentials: "include" })
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         setTransactions(data);
         setFiltered(data);
       });
@@ -128,54 +155,51 @@ export default function AdminPage() {
   useEffect(() => {
     let data = [...transactions];
     if (searchId.trim()) {
-      data = data.filter(tx => tx._id === searchId.trim());
+      data = data.filter((tx) => tx._id === searchId.trim());
     } else {
-      if (statusFilter !== "all")
-        data = data.filter(tx => tx.status === statusFilter);
-      if (dateFrom)
-        data = data.filter(tx => new Date(tx.createdAt) >= new Date(dateFrom));
+      if (statusFilter !== "all") data = data.filter((tx) => tx.status === statusFilter);
+      if (dateFrom) data = data.filter((tx) => new Date(tx.createdAt) >= new Date(dateFrom));
       if (dateTo) {
         const toDate = new Date(dateTo);
         toDate.setHours(23, 59, 59, 999);
-        data = data.filter(tx => new Date(tx.createdAt) <= toDate);
+        data = data.filter((tx) => new Date(tx.createdAt) <= toDate);
       }
     }
     setFiltered(data);
   }, [transactions, statusFilter, dateFrom, dateTo, searchId]);
 
   const updateStatus = async (id, newStatus) => {
-  await fetch("/api/admin/update-status", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id, status: newStatus })
-  });
+    await fetch("/api/admin/update-status", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status: newStatus }),
+    });
 
-  // Mise à jour dans le state
-  setTransactions(txns => txns.map(tx => tx._id === id ? { ...tx, status: newStatus } : tx));
+    setTransactions((txns) =>
+      txns.map((tx) => (tx._id === id ? { ...tx, status: newStatus } : tx))
+    );
 
-  // Si validé → envoi email de confirmation
-  if (newStatus === "validé") {
-    try {
-      const res = await fetch("/api/send-confirmation-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
+    if (newStatus === "validé") {
+      try {
+        const res = await fetch("/api/send-confirmation-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id }),
+        });
 
-      const data = await res.json();
-      if (!res.ok) {
-        console.error("Erreur email confirmation :", data.message);
-        alert("⚠️ Email de confirmation non envoyé.");
-      } else {
-        console.log("Email de confirmation envoyé.");
+        const data = await res.json();
+        if (!res.ok) {
+          console.error("Erreur email confirmation :", data.message);
+          alert("⚠️ Email de confirmation non envoyé.");
+        } else {
+          console.log("Email de confirmation envoyé.");
+        }
+      } catch (e) {
+        console.error("Erreur réseau lors de l'envoi d'email", e);
       }
-    } catch (e) {
-      console.error("Erreur réseau lors de l'envoi d'email", e);
     }
-  }
-};
-
+  };
 
   const exportFiltered = (format) => {
     const params = new URLSearchParams();
@@ -225,14 +249,16 @@ export default function AdminPage() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex items-center mb-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center mb-4 gap-4">
         <h1 className="text-3xl font-bold text-primary">Tableau de bord Admin</h1>
-        <button
-          onClick={handleLogout}
-          className="ml-auto bg-gray-300 hover:bg-gray-400 text-sm px-3 py-1 rounded"
-        >
-          Déconnexion
-        </button>
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={handleLogout}
+            className="bg-gray-300 hover:bg-gray-400 text-sm px-3 py-1 rounded"
+          >
+            Déconnexion
+          </button>
+        </div>
       </div>
 
       {/* Taux */}
@@ -241,7 +267,7 @@ export default function AdminPage() {
 
         {editingRates ? (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {Object.entries(editingRates).map(([cur, val]) => (
                 <div key={cur}>
                   <label className="block mb-1 text-sm">{cur}</label>
@@ -259,11 +285,13 @@ export default function AdminPage() {
                 </div>
               ))}
             </div>
-            <div className="mt-4">
+            <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
               <button
                 onClick={handleSaveRates}
                 disabled={saving}
-                className={`bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 ${saving ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`flex-shrink-0 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 ${
+                  saving ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
                 {saving ? "Enregistrement..." : "Enregistrer les taux"}
               </button>
@@ -279,21 +307,21 @@ export default function AdminPage() {
 
       {/* Filtres */}
       <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="flex flex-col md:flex-row items-center gap-4">
-          <div>
+        <div className="flex flex-col md:flex-row flex-wrap items-start gap-4">
+          <div className="flex-1 min-w-[150px]">
             <label className="block mb-1 text-sm">Recherche par ID</label>
             <input
               type="text"
               placeholder="Entrez l'ID"
-              className="border rounded px-3 py-2"
+              className="w-full border rounded px-3 py-2"
               value={searchId}
               onChange={(e) => setSearchId(e.target.value)}
             />
           </div>
-          <div>
+          <div className="flex-1 min-w-[150px]">
             <label className="block mb-1 text-sm">Filtre statut</label>
             <select
-              className="border rounded px-3 py-2"
+              className="w-full border rounded px-3 py-2"
               disabled={!!searchId}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -303,27 +331,27 @@ export default function AdminPage() {
               <option value="validé">Validé</option>
             </select>
           </div>
-          <div>
+          <div className="flex-1 min-w-[150px]">
             <label className="block mb-1 text-sm">Du</label>
             <input
               type="date"
               disabled={!!searchId}
-              className="border rounded px-3 py-2"
+              className="w-full border rounded px-3 py-2"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
             />
           </div>
-          <div>
+          <div className="flex-1 min-w-[150px]">
             <label className="block mb-1 text-sm">Au</label>
             <input
               type="date"
               disabled={!!searchId}
-              className="border rounded px-3 py-2"
+              className="w-full border rounded px-3 py-2"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
             />
           </div>
-          <div className="ml-auto flex gap-2">
+          <div className="ml-auto flex gap-2 flex-wrap">
             <button
               onClick={() => exportFiltered("csv")}
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
@@ -341,40 +369,56 @@ export default function AdminPage() {
       </div>
 
       {/* Transactions */}
-      <div className="overflow-x-auto bg-white rounded-lg shadow">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-3">Date</th>
-              <th className="p-3">Client</th>
-              <th className="p-3">Montant</th>
-              <th className="p-3">Équivalent</th>
-              <th className="p-3">Statut</th>
-              <th className="p-3">Action</th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="mb-6">
+        {isMobile ? (
+          <div className="space-y-4">
             {filtered.map((tx) => (
-              <tr key={tx._id} className="border-t">
-                <td className="p-3">{format(new Date(tx.createdAt), "yyyy-MM-dd")}</td>
-                <td className="p-3">
-                  <strong>{tx.firstName} {tx.lastName}</strong><br />
-                  <small>{tx.email}</small>
-                </td>
-                <td className="p-3">{tx.amount} {tx.from}</td>
-                <td className="p-3">{tx.converted} {tx.to}</td>
-                <td className="p-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                    tx.status === "validé"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-yellow-100 text-yellow-800"
-                  }`}>
-                    {tx.status}
-                  </span>
-                </td>
-                <td className="p-3 flex gap-2">
+              <div
+                key={tx._id}
+                className="bg-white rounded-lg shadow p-4 flex flex-col"
+              >
+                <div className="flex justify-between items-start flex-wrap gap-2">
+                  <div className="text-sm">
+                    <div>
+                      <strong>ID:</strong> {tx._id}
+                    </div>
+                    <div>
+                      <strong>Date:</strong>{" "}
+                      {format(new Date(tx.createdAt), "yyyy-MM-dd")}
+                    </div>
+                    <div>
+                      <strong>Client:</strong> {tx.firstName} {tx.lastName}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 flex-wrap mt-2">
+                    <div className="text-sm">
+                      <div>
+                        <strong>
+                          {tx.amount} {tx.from}
+                        </strong>
+                      </div>
+                      <div>
+                        <strong>
+                          {tx.converted} {tx.to}
+                        </strong>
+                      </div>
+                    </div>
+                    <div>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          tx.status === "validé"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {tx.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2">
                   <select
-                    className="border rounded px-2 py-1"
+                    className="border rounded px-2 py-1 flex-shrink-0"
                     value={tx.status}
                     onChange={(e) => updateStatus(tx._id, e.target.value)}
                   >
@@ -382,30 +426,100 @@ export default function AdminPage() {
                     <option value="validé">Validé</option>
                   </select>
                   <button
-                    onClick={() => { setDetailTx(tx); setIsDetailOpen(true); }}
-                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                    onClick={() => {
+                      setDetailTx(tx);
+                      setIsDetailOpen(true);
+                    }}
+                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 flex-shrink-0"
                   >
                     Détails
                   </button>
-                </td>
-              </tr>
+                </div>
+              </div>
             ))}
             {filtered.length === 0 && (
-              <tr>
-                <td colSpan="6" className="text-center text-gray-500 p-6">
-                  Aucun résultat.
-                </td>
-              </tr>
+              <div className="text-center text-gray-500 p-6 bg-white rounded-lg shadow">
+                Aucun résultat.
+              </div>
             )}
-          </tbody>
-        </table>
+          </div>
+        ) : (
+          <div className="overflow-x-auto bg-white rounded-lg shadow">
+            <table className="w-full text-sm min-w-[700px]">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-3">Date</th>
+                  <th className="p-3">Client</th>
+                  <th className="p-3">Montant</th>
+                  <th className="p-3">Équivalent</th>
+                  <th className="p-3">Statut</th>
+                  <th className="p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((tx) => (
+                  <tr key={tx._id} className="border-t">
+                    <td className="p-3">{format(new Date(tx.createdAt), "yyyy-MM-dd")}</td>
+                    <td className="p-3">
+                      <strong>
+                        {tx.firstName} {tx.lastName}
+                      </strong>
+                      <br />
+                      <small>{tx.email}</small>
+                    </td>
+                    <td className="p-3">
+                      {tx.amount} {tx.from}
+                    </td>
+                    <td className="p-3">
+                      {tx.converted} {tx.to}
+                    </td>
+                    <td className="p-3">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          tx.status === "validé"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {tx.status}
+                      </span>
+                    </td>
+                    <td className="p-3 flex gap-2 flex-wrap">
+                      <select
+                        className="border rounded px-2 py-1"
+                        value={tx.status}
+                        onChange={(e) => updateStatus(tx._id, e.target.value)}
+                      >
+                        <option value="en attente">En attente</option>
+                        <option value="validé">Validé</option>
+                      </select>
+                      <button
+                        onClick={() => {
+                          setDetailTx(tx);
+                          setIsDetailOpen(true);
+                        }}
+                        className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                      >
+                        Détails
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="text-center text-gray-500 p-6">
+                      Aucun résultat.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      <DetailModal
-        isOpen={isDetailOpen}
-        tx={detailTx}
-        onClose={() => setIsDetailOpen(false)}
-      />
+      <DetailModal isOpen={isDetailOpen} tx={detailTx} onClose={() => setIsDetailOpen(false)} />
     </div>
   );
 }
+

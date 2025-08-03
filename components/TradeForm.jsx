@@ -112,41 +112,100 @@ export default function TradeForm() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  e.preventDefault();
+  setIsSubmitting(true);
 
-    const form = new FormData();
-    form.append("amount", amount);
-    form.append("from", fromCurrency);
-    form.append("to", toCurrency);
-    form.append("converted", preview);
-    form.append("firstName", firstName);
-    form.append("lastName", lastName);
-    form.append("phone", phone);
-    form.append("email", email);
-    form.append("country", country);
+  const form = new FormData();
+  form.append("amount", amount);
+  form.append("from", fromCurrency);
+  form.append("to", toCurrency);
+  form.append("converted", preview);
+  form.append("firstName", firstName);
+  form.append("lastName", lastName);
+  form.append("phone", phone);
+  form.append("email", email);
+  form.append("country", country);
+  form.append("paymentMethod", paymentMethod);
+  form.append("paymentDetails", paymentDetails);
 
-    form.append("paymentMethod", paymentMethod);
-    form.append("paymentDetails", paymentDetails);
+  if (modalType === "fiat2fiat") {
+    form.append("receiveMethod", receiveMethod);
+    form.append("receiveDetails", receiveDetails);
+  } else if (modalType === "fiat2crypto") {
+    form.append("address", receiveDetails);
+  }
 
-    if (modalType === "fiat2fiat") {
-      form.append("receiveMethod", receiveMethod);
-      form.append("receiveDetails", receiveDetails);
-    } else if (modalType === "fiat2crypto") {
-      form.append("address", receiveDetails);
-    }
+  form.append("proof", proofFile);
 
-    form.append("proof", proofFile);
-
-    await fetch("/api/send-transaction-email", {
+  // 1. Envoi de la transaction + email client/admin
+  let txId = null;
+  try {
+    const txResp = await fetch("/api/send-transaction-email", {
       method: "POST",
       body: form,
-    }).catch(console.error);
+    });
 
+    if (!txResp.ok) {
+      const err = await txResp.text();
+      console.error("Erreur lors de l'envoi de la transaction:", err);
+      // tu peux afficher une erreur utilisateur ici
+      setIsSubmitting(false);
+      return;
+    }
+
+    const txData = await txResp.json();
+    txId = txData.id || txData.id?.toString();
+    if (!txId) {
+      console.warn("Aucun ID de transaction retourné :", txData);
+    }
+  } catch (err) {
+    console.error("Erreur fetch send-transaction-email :", err);
     setIsSubmitting(false);
-    setIsModalOpen(false);
-    setIsConfirmOpen(true);
-  };
+    return;
+  }
+
+  // 2. Envoi du SMS à toi-même via King SMS Pro
+  if (txId) {
+    try {
+      const smsPayload = {
+        transactionId: txId,
+        firstName,
+        lastName,
+        email,
+        phone,
+        country,
+        from: fromCurrency,
+        to: toCurrency,
+        amount,
+        converted: preview,
+        status: "en attente",
+      };
+
+      const smsRes = await fetch("/api/send-sms", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(smsPayload),
+      });
+
+      if (!smsRes.ok) {
+        const errData = await smsRes.json();
+        console.error("Échec envoi SMS:", errData);
+      } else {
+        console.log("SMS de notification envoyé"); 
+      }
+    } catch (err) {
+      console.error("Erreur appel /api/send-sms :", err);
+    }
+  } else {
+    console.warn("Pas d'envoi SMS : txId manquant");
+  }
+
+  setIsSubmitting(false);
+  setIsModalOpen(false);
+  setIsConfirmOpen(true);
+};
 
   const handleFinish = () => {
     setIsConfirmOpen(false);
