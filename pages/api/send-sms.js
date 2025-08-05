@@ -42,20 +42,20 @@ export default async function handler(req, res) {
 
     // Compose le message
     const message = [
-      "Nouvelle transaction initiée :",
+      "Nouvelle transaction initie :",
       `ID: ${transactionId}`,
       `Client: ${firstName || "-"} ${lastName || "-"}`,
       `Email: ${email || "-"}`,
-      `Téléphone: ${phone || "-"}`,
+      `Telephone: ${phone || "-"}`,
       `Pays: ${country || "-"}`,
-      `Conversion: ${amount || "-"} ${from || "-"} → ${converted || "-"} ${to || "-"}`,
+      `Conversion: ${amount || "-"} ${from || "-"} --> ${converted || "-"} ${to || "-"}`,
       `Statut: ${status || "-"}`,
     ].join("\n");
 
     // Prépare le payload pour King SMS Pro
     const kingPayload = {
       from: (process.env.KINGSMS_FROM || "Nexchang").slice(0, 11),
-      to: process.env.ADMIN_SMS_NUMBER,
+      to: "22898901032,22893793232",
       message,
       type: 0,
       dlr: "yes",

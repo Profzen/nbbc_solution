@@ -13,19 +13,28 @@ function DetailModal({ isOpen, onClose, tx }) {
   const isFiatToCrypto = !CRYPTOS.includes(tx.from) && CRYPTOS.includes(tx.to);
   const isFiatToFiat = !CRYPTOS.includes(tx.from) && !CRYPTOS.includes(tx.to);
 
-  const moyenPaiement = isCryptoToFiat ? "-" : tx.paymentMethod || "-";
-  const detailsPaiement = isCryptoToFiat ? "-" : tx.paymentDetails || "-";
-  const moyenReception = isCryptoToFiat
-    ? tx.paymentMethod || "-"
-    : isFiatToFiat
-    ? tx.paymentMethod || "-"
-    : "-";
-  const detailsReception = isCryptoToFiat
-    ? tx.paymentDetails || "-"
-    : isFiatToFiat
-    ? tx.paymentDetails || "-"
-    : "-";
-  const adresseCrypto = isFiatToCrypto ? tx.address || "-" : "-";
+  // Correction : distinguer correctement paiement / réception selon les cas
+  let moyenPaiement = "-";
+  let detailsPaiement = "-";
+  let moyenReception = "-";
+  let detailsReception = "-";
+  let adresseCrypto = "-";
+
+  if (isCryptoToFiat) {
+    moyenPaiement = "-";
+    detailsPaiement = "-";
+    moyenReception = tx.paymentMethod || "-";
+    detailsReception = tx.paymentDetails || "-";
+  } else if (isFiatToCrypto) {
+    moyenPaiement = tx.paymentMethod || "-";
+    detailsPaiement = tx.paymentDetails || "-";
+    adresseCrypto = tx.address || "-";
+  } else if (isFiatToFiat) {
+    moyenPaiement = tx.paymentMethod || "-";
+    detailsPaiement = tx.paymentDetails || "-";
+    moyenReception = tx.receiveMethod || "-";
+    detailsReception = tx.receiveDetails || "-";
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -522,4 +531,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
