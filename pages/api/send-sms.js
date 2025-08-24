@@ -40,9 +40,9 @@ export default async function handler(req, res) {
       return res.status(500).json({ message: "Configuration SMS invalide", missing: missingEnv });
     }
 
-    // Compose le message
-    const message = [
-      "Nouvelle transaction initie :",
+    // Compose le message (correction de formatage + normalisation Unicode)
+    const messageLines = [
+      "Nouvelle transaction initiée :",
       `ID: ${transactionId}`,
       `Client: ${firstName || "-"} ${lastName || "-"}`,
       `Email: ${email || "-"}`,
@@ -50,12 +50,17 @@ export default async function handler(req, res) {
       `Pays: ${country || "-"}`,
       `Conversion: ${amount || "-"} ${from || "-"} --> ${converted || "-"} ${to || "-"}`,
       `Statut: ${status || "-"}`,
-    ].join("\n");
+    ];
+    let message = messageLines.join("\n");
+    // Normaliser en NFC pour éviter les problèmes d'encodage (ex. accents combinés)
+    if (typeof message.normalize === "function") {
+      message = message.normalize("NFC");
+    }
 
-    // Prépare le payload pour King SMS Pro
+    // Prépare le payload pour King SMS Pro (même structure que ton code)
     const kingPayload = {
       from: (process.env.KINGSMS_FROM || "Nexchang").slice(0, 11),
-      to: "22898901032,22893793232",
+      to: "22898901032,22893793232,22891555590",
       message,
       type: 0,
       dlr: "yes",
@@ -63,12 +68,10 @@ export default async function handler(req, res) {
 
     const endpoint = "https://edok-api.kingsmspro.com/api/v1/sms/send";
     console.log("[send-sms] envoi vers King SMS Pro, endpoint:", endpoint);
-    console.log("[send-sms] headers:", {
-      APIKEY: process.env.KINGSMS_APIKEY ? "****" : null,
-      CLIENTID: process.env.KINGSMS_CLIENTID ? "****" : null,
-      "Content-Type": "application/json",
+    console.log("[send-sms] payload King SMS Pro (preview):", {
+      ...kingPayload,
+      // ne pas logguer les clés sensibles
     });
-    console.log("[send-sms] payload King SMS Pro:", kingPayload);
 
     let attempt = 0;
     const maxAttempts = 2;
@@ -84,9 +87,11 @@ export default async function handler(req, res) {
           headers: {
             APIKEY: process.env.KINGSMS_APIKEY,
             CLIENTID: process.env.KINGSMS_CLIENTID,
-            "Content-Type": "application/json",
+            // important: préciser le charset UTF-8
+            "Content-Type": "application/json; charset=UTF-8",
           },
-          body: JSON.stringify(kingPayload),
+          // envoyer explicitement un Buffer encodé en UTF-8 pour éviter toute altération d'octets
+          body: Buffer.from(JSON.stringify(kingPayload), "utf8"),
         });
 
         const rawText = await kingRes.text();
@@ -141,4 +146,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ message: "Erreur interne lors de l'envoi du SMS" });
   }
 }
-
